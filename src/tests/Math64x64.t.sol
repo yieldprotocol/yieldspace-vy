@@ -3,13 +3,13 @@ pragma solidity ^0.8.6;
 
 import "ds-test/test.sol";
 
-import "./../contracts/YieldspaceVy.sol";
+import "./../contracts/Math64x64.sol";
 
-contract YieldspaceVyTest is DSTest {
-    YieldspaceVy vy;
+contract Math64x64Test is DSTest {
+    Math64x64 m;
 
     function setUp() public {
-        vy = new YieldspaceVy();
+        m = new Math64x64();
     }
 
     function testFail_basic_sanity() public {
