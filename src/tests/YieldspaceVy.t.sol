@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import "ds-test/test.sol";
 
-import "./YieldspaceVy.sol";
+import "./../contracts/YieldspaceVy.sol";
 
 contract YieldspaceVyTest is DSTest {
     YieldspaceVy vy;
