@@ -3,7 +3,7 @@
  *  Math 64.64 Smart Contract Library.  Copyright © 2019 by  Consulting.
  * Author: Mikhail Vladimirov <mikhail.vladimirov@gmail.com>
  */
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.11;
 
 /**
  * Smart contract library of mathematical functions operating with signed
@@ -14,16 +14,6 @@ pragma solidity ^0.7.0;
  * represented by int128 type holding only the numerator.
  */
 library Math64x64 {
-    /**
-     * @dev Minimum value signed 64.64-bit fixed point number may have.
-     */
-    int128 private constant MIN_64x64 = -0x80000000000000000000000000000000;
-
-    /**
-     * @dev Maximum value signed 64.64-bit fixed point number may have.
-     */
-    int128 private constant MAX_64x64 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-
     /**
      * @dev Convert signed 256-bit integer number into signed 64.64-bit fixed point
      * number.  Revert on overflow.
@@ -80,7 +70,7 @@ library Math64x64 {
      */
     function from128x128(int256 x) internal pure returns (int128) {
         int256 result = x >> 64;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
+        require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
@@ -103,9 +93,7 @@ library Math64x64 {
      * @return signed 64.64-bit fixed point number
      */
     function add(int128 x, int128 y) internal pure returns (int128) {
-        int256 result = int256(x) + y;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
-        return int128(result);
+        return x + y;
     }
 
     /**
@@ -116,9 +104,7 @@ library Math64x64 {
      * @return signed 64.64-bit fixed point number
      */
     function sub(int128 x, int128 y) internal pure returns (int128) {
-        int256 result = int256(x) - y;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
-        return int128(result);
+        return x - y;
     }
 
     /**
@@ -130,7 +116,7 @@ library Math64x64 {
      */
     function mul(int128 x, int128 y) internal pure returns (int128) {
         int256 result = (int256(x) * y) >> 64;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
+        require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
@@ -143,35 +129,37 @@ library Math64x64 {
      * @return signed 256-bit integer number
      */
     function muli(int128 x, int256 y) internal pure returns (int256) {
-        if (x == MIN_64x64) {
-            require(
-                y >= -0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF &&
-                    y <= 0x1000000000000000000000000000000000000000000000000
-            );
-            return -y << 63;
-        } else {
-            bool negativeResult = false;
-            if (x < 0) {
-                x = -x;
-                negativeResult = true;
-            }
-            if (y < 0) {
-                y = -y; // We rely on overflow behavior here
-                negativeResult = !negativeResult;
-            }
-            uint256 absoluteResult = mulu(x, uint256(y));
-            if (negativeResult) {
+        unchecked {
+            if (x == type(int128).min) {
                 require(
-                    absoluteResult <=
-                        0x8000000000000000000000000000000000000000000000000000000000000000
+                    y >= -0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF &&
+                        y <= 0x1000000000000000000000000000000000000000000000000
                 );
-                return -int256(absoluteResult); // We rely on overflow behavior here
+                return -y << 63;
             } else {
-                require(
-                    absoluteResult <=
-                        0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-                );
-                return int256(absoluteResult);
+                bool negativeResult = false;
+                if (x < 0) {
+                    x = -x;
+                    negativeResult = true;
+                }
+                if (y < 0) {
+                    y = -y; // We rely on overflow behavior here
+                    negativeResult = !negativeResult;
+                }
+                uint256 absoluteResult = mulu(x, uint256(y));
+                if (negativeResult) {
+                    require(
+                        absoluteResult <=
+                            0x8000000000000000000000000000000000000000000000000000000000000000
+                    );
+                    return -int256(absoluteResult); // We rely on overflow behavior here
+                } else {
+                    require(
+                        absoluteResult <=
+                            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                    );
+                    return int256(absoluteResult);
+                }
             }
         }
     }
@@ -215,7 +203,7 @@ library Math64x64 {
     function div(int128 x, int128 y) internal pure returns (int128) {
         require(y != 0);
         int256 result = (int256(x) << 64) / y;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
+        require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
@@ -231,21 +219,23 @@ library Math64x64 {
         require(y != 0);
 
         bool negativeResult = false;
-        if (x < 0) {
-            x = -x; // We rely on overflow behavior here
-            negativeResult = true;
-        }
-        if (y < 0) {
-            y = -y; // We rely on overflow behavior here
-            negativeResult = !negativeResult;
-        }
-        uint128 absoluteResult = divuu(uint256(x), uint256(y));
-        if (negativeResult) {
-            require(absoluteResult <= 0x80000000000000000000000000000000);
-            return -int128(absoluteResult); // We rely on overflow behavior here
-        } else {
-            require(absoluteResult <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
-            return int128(absoluteResult); // We rely on overflow behavior here
+        unchecked {
+            if (x < 0) {
+                x = -x; // We rely on overflow behavior here
+                negativeResult = true;
+            }
+            if (y < 0) {
+                y = -y; // We rely on overflow behavior here
+                negativeResult = !negativeResult;
+            }
+            uint128 absoluteResult = divuu(uint256(x), uint256(y));
+            if (negativeResult) {
+                require(absoluteResult <= 0x80000000000000000000000000000000);
+                return -int128(absoluteResult); // We rely on overflow behavior here
+            } else {
+                require(absoluteResult <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+                return int128(absoluteResult); // We rely on overflow behavior here
+            }
         }
     }
 
@@ -260,7 +250,7 @@ library Math64x64 {
     function divu(uint256 x, uint256 y) internal pure returns (int128) {
         require(y != 0);
         uint128 result = divuu(x, y);
-        require(result <= uint128(MAX_64x64));
+        require(result <= uint128(type(int128).max));
         return int128(result);
     }
 
@@ -271,7 +261,7 @@ library Math64x64 {
      * @return signed 64.64-bit fixed point number
      */
     function neg(int128 x) internal pure returns (int128) {
-        require(x != MIN_64x64);
+        require(x != type(int128).min);
         return -x;
     }
 
@@ -282,7 +272,7 @@ library Math64x64 {
      * @return signed 64.64-bit fixed point number
      */
     function abs(int128 x) internal pure returns (int128) {
-        require(x != MIN_64x64);
+        require(x != type(int128).min);
         return x < 0 ? -x : x;
     }
 
@@ -296,7 +286,7 @@ library Math64x64 {
     function inv(int128 x) internal pure returns (int128) {
         require(x != 0);
         int256 result = int256(0x100000000000000000000000000000000) / x;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
+        require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
@@ -340,22 +330,24 @@ library Math64x64 {
     function pow(int128 x, uint256 y) internal pure returns (int128) {
         uint256 absoluteResult;
         bool negativeResult = false;
-        if (x >= 0) {
-            absoluteResult = powu(uint256(x) << 63, y);
-        } else {
-            // We rely on overflow behavior here
-            absoluteResult = powu(uint256(uint128(-x)) << 63, y);
-            negativeResult = y & 1 > 0;
-        }
+        unchecked {
+            if (x >= 0) {
+                absoluteResult = powu(uint256(x) << 63, y);
+            } else {
+                // We rely on overflow behavior here
+                absoluteResult = powu(uint256(uint128(-x)) << 63, y);
+                negativeResult = y & 1 > 0;
+            }
 
-        absoluteResult >>= 63;
+            absoluteResult >>= 63;
 
-        if (negativeResult) {
-            require(absoluteResult <= 0x80000000000000000000000000000000);
-            return -int128(absoluteResult); // We rely on overflow behavior here
-        } else {
-            require(absoluteResult <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
-            return int128(absoluteResult); // We rely on overflow behavior here
+            if (negativeResult) {
+                require(absoluteResult <= 0x80000000000000000000000000000000);
+                return -int128(absoluteResult); // We rely on overflow behavior here
+            } else {
+                require(absoluteResult <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+                return int128(absoluteResult); // We rely on overflow behavior here
+            }
         }
     }
 
@@ -577,7 +569,7 @@ library Math64x64 {
             result = (result * 0x10000000000000000B17217F7D1CF79AB) >> 128;
 
         result >>= 63 - (uint256(x) >> 64);
-        require(result <= uint256(MAX_64x64));
+        require(result <= uint256(type(int128).max));
 
         return int128(result);
     }
@@ -648,11 +640,13 @@ library Math64x64 {
             uint256 xh = x >> 192;
             uint256 xl = x << 64;
 
-            if (xl < lo) xh -= 1;
-            xl -= lo; // We rely on overflow behavior here
-            lo = hi << 128;
-            if (xl < lo) xh -= 1;
-            xl -= lo; // We rely on overflow behavior here
+            unchecked {
+                if (xl < lo) xh -= 1;
+                xl -= lo; // We rely on overflow behavior here
+                lo = hi << 128;
+                if (xl < lo) xh -= 1;
+                xl -= lo; // We rely on overflow behavior here
+            }
 
             assert(xh == hi >> 128);
 
