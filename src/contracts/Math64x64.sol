@@ -46,7 +46,7 @@ library Math64x64 {
      */
     function fromUInt(uint256 x) internal pure returns (int128) {
         require(x <= 0x7FFFFFFFFFFFFFFF);
-        return int128(x << 64);
+        return int128(uint128(x << 64));
     }
 
     /**
@@ -58,7 +58,7 @@ library Math64x64 {
      */
     function toUInt(int128 x) internal pure returns (uint64) {
         require(x >= 0);
-        return uint64(x >> 64);
+        return uint64(uint128(x >> 64));
     }
 
     /**
@@ -129,6 +129,7 @@ library Math64x64 {
      * @return signed 256-bit integer number
      */
     function muli(int128 x, int256 y) internal pure returns (int256) {
+      //NOTE: This reverts if y == type(int128).min
         unchecked {
             if (x == type(int128).min) {
                 require(
@@ -177,9 +178,9 @@ library Math64x64 {
 
         require(x >= 0);
 
-        uint256 lo = (uint256(x) * (y & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)) >>
-            64;
-        uint256 hi = uint256(x) * (y >> 128);
+        uint256 lo = uint128((uint256(uint128(x)) * (y & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)) >>
+            64);
+        uint256 hi = uint128(uint256(uint128(x)) * (y >> 128));
 
         require(hi <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
         hi <<= 64;
@@ -316,7 +317,7 @@ library Math64x64 {
             m <
                 0x4000000000000000000000000000000000000000000000000000000000000000
         );
-        return int128(sqrtu(uint256(m), (uint256(x) + uint256(y)) >> 1));
+        return int128(sqrtu(uint256(m), (uint256(uint128(x)) + uint256(uint128(y))) >> 1));
     }
 
     /**
@@ -332,7 +333,7 @@ library Math64x64 {
         bool negativeResult = false;
         unchecked {
             if (x >= 0) {
-                absoluteResult = powu(uint256(x) << 63, y);
+                absoluteResult = powu(uint256(uint128(x)) << 63, y);
             } else {
                 // We rely on overflow behavior here
                 absoluteResult = powu(uint256(uint128(-x)) << 63, y);
@@ -343,10 +344,10 @@ library Math64x64 {
 
             if (negativeResult) {
                 require(absoluteResult <= 0x80000000000000000000000000000000);
-                return -int128(absoluteResult); // We rely on overflow behavior here
+                return -int128(int256(absoluteResult)); // We rely on overflow behavior here
             } else {
                 require(absoluteResult <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
-                return int128(absoluteResult); // We rely on overflow behavior here
+                return int128(int256(absoluteResult)); // We rely on overflow behavior here
             }
         }
     }
@@ -359,7 +360,7 @@ library Math64x64 {
      */
     function sqrt(int128 x) internal pure returns (int128) {
         require(x >= 0);
-        return int128(sqrtu(uint256(x) << 64, 0x10000000000000000));
+        return int128(sqrtu(uint256(uint128(x)) << 64, 0x10000000000000000));
     }
 
     /**
@@ -400,7 +401,7 @@ library Math64x64 {
         if (xc >= 0x2) msb += 1; // No need to shift xc anymore
 
         int256 result = (msb - 64) << 64;
-        uint256 ux = uint256(x) << (127 - uint256(msb));
+        uint256 ux = uint256(uint128(x)) << (127 - uint256(msb));
         for (int256 bit = 0x8000000000000000; bit > 0; bit >>= 1) {
             ux *= ux;
             uint256 b = ux >> 255;
@@ -421,9 +422,9 @@ library Math64x64 {
         require(x > 0);
 
         return
-            int128(
-                (uint256(log_2(x)) * 0xB17217F7D1CF79ABC9E3B39803F2F6AF) >> 128
-            );
+            int128(int256(
+                (uint256(uint128(log_2(x))) * 0xB17217F7D1CF79ABC9E3B39803F2F6AF) >> 128
+            ));
     }
 
     /**
@@ -568,10 +569,10 @@ library Math64x64 {
         if (x & 0x1 > 0)
             result = (result * 0x10000000000000000B17217F7D1CF79AB) >> 128;
 
-        result >>= 63 - (uint256(x) >> 64);
-        require(result <= uint256(type(int128).max));
+        result >>= 63 - (uint256(uint128(x)) >> 64);
+        require(result <= uint256(uint128(type(int128).max)));
 
-        return int128(result);
+        return int128(uint128(result));
     }
 
     /**
@@ -599,7 +600,8 @@ library Math64x64 {
      * @param y unsigned 256-bit integer number
      * @return unsigned 64.64-bit fixed point number
      */
-    function divuu(uint256 x, uint256 y) private pure returns (uint128) {
+    function divuu(uint256 x, uint256 y) internal pure returns (uint128) {
+      // ^^ changed visibility from private to internal for testing
         require(y != 0);
 
         uint256 result;
@@ -665,7 +667,8 @@ library Math64x64 {
      * @param y uint256 value
      * @return unsigned 129.127-bit fixed point number
      */
-    function powu(uint256 x, uint256 y) private pure returns (uint256) {
+    function powu(uint256 x, uint256 y) internal pure returns (uint256) {
+      // ^^ changed visibility from private to internal for testing
         if (y == 0) return 0x80000000000000000000000000000000;
         else if (x == 0) return 0;
         else {
@@ -752,7 +755,8 @@ library Math64x64 {
      * @param x unsigned 256-bit integer number
      * @return unsigned 128-bit integer number
      */
-    function sqrtu(uint256 x, uint256 r) private pure returns (uint128) {
+    function sqrtu(uint256 x, uint256 r) internal pure returns (uint128) {
+      // ^^ changed visibility from private to internal for testing
         if (x == 0) return 0;
         else {
             require(r > 0);
