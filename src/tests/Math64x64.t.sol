@@ -41,10 +41,10 @@ contract Math64x64Test is DSTest {
         28. function sqrtu (uint256 x, uint256 r) internal pure returns (uint128)
 
 
-        Test name prefixe definitions:
-        testUnit_          -_Math64x64 Unit tests for common edge cases
-        testFail_<reason_Math64x64>  - Unit tests code reverts appropriately
-        testFuzz_          -_Math64x64 Property based fuzz tests
+        Test name prefix definitions:
+        testUnit_          - Unit tests for common edge cases
+        testFail_<reason>  - Unit tests code reverts appropriately
+        testFuzz_          - Property based fuzz tests
         prove_             - Symbolic execution
         NOTE: Symbolic execution tests found in separate file:
         Math64x64SymbolicExecution.t.sol

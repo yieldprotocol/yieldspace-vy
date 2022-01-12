@@ -22,7 +22,10 @@ function abs(int256 x) pure returns (int256) {
 }
 
 function coerceUInt256To128(uint256 passedIn) pure returns (uint128) {
-    return uint128(passedIn % type(uint128).max);
+    uint256 min = type(uint128).min;
+    uint256 max = type(uint128).max;
+    uint256 range = max - min + 1;
+    return uint128((passedIn % range) + min);
 }
 
 function coerceInt256To128(int256 passedIn) pure returns (int128) {
@@ -484,6 +487,7 @@ function pow2Exp64x64(uint128 x) pure returns (uint128) {
         r = (r * 0x8000000000000058b90bfbe8e7bcf4a4) >> 127;
     if (x & 0x10000000000000000 > 0)
         r = (r * 0x800000000000002c5c85fdf473de72a2) >> 127;
+
     r >>= 127 - (x >> 121);
 
     return uint128(r);
