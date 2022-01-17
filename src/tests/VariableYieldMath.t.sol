@@ -3,20 +3,19 @@ pragma solidity ^0.8.11;
 
 import "ds-test/test.sol";
 
-import "./../contracts/VariableYieldMath.sol";
+import {VariableYieldMath} from "./../contracts/VariableYieldMath.sol";
 import "./helpers.sol";
 
-/// @dev Tests for library: Exp64x64 (located in file VariableYieldMath.sol)
-contract Exp64x64Test is DSTest {
+contract VariableYieldMathTest is DSTest {
     /**TESTS*********************************************************
 
         Tests grouped by function:
-        1.  function pow(int256 x) internal pure returns (int128)
+
 
         Test name prefixe definitions:
-        testUnit_          -_Math64x64 Unit tests for common edge cases
-        testFail_<reason_Math64x64>  - Unit tests code reverts appropriately
-        testFuzz_          -_Math64x64 Property based fuzz tests
+        testUnit_          - Unit tests for common edge cases
+        testFail_<reason>_ - Unit tests code reverts appropriately
+        testFuzz_          - Property based fuzz tests
         prove_             - Symbolic execution
         NOTE: Symbolic execution tests found in separate file:
         VariableYieldMathSymbolicExecution.t.sol
@@ -24,185 +23,123 @@ contract Exp64x64Test is DSTest {
         <NAME OF TEST> = <prefix>_<name of function being tested>_<name of library>
 
         example:
-        testFuzz_someFunc_Exp64x64 = fuzz testing on function named someFunc in Exp64x64
-        testFail_Unauthorized_someFunc_Exp64x64 = test reverts when unauthorized
+        testFuzz_someFunc_SomeLib = fuzz testing on function named someFunc in SomeLib
+        testFail_Unauthorized_someFunc_SomeLib = test reverts when unauthorized
 
     ****************************************************************/
 
-    // // create an external contract for use with try/catch
-    // ForTesting public forTesting;
+    // create an external contract for use with try/catch
+    ForTesting public forTesting;
 
-    // constructor() {
-    //     forTesting = new ForTesting();
+    int128 immutable b;
+    int128 immutable k;
+    int128 immutable g1;
+    int128 immutable g2;
+    int128 immutable ONE64;
+
+    constructor() {
+        b = 18446744073709551615;
+        k = b / 126144000;
+        g1 = (950 * b) / 1000;
+        g2 = (1000 * b) / 950;
+        ONE64 = 18446744073709551616;
+        forTesting = new ForTesting();
+
+    }
+
+    /* 1. function fyTokenOutForVyBaseIn
+     ***************************************************************/
+
+    function testUnit_fyTokenOutForVyBaseIn_VariableYieldMath() public {
+        uint128[3] memory vyBaseReserveValues = [
+            uint128(10000000000000000000000),
+            100000000000000000000000000,
+            1000000000000000000000000000000
+        ];
+        uint128[3] memory fyTokenReserveValues = [
+            uint128(1000000000000000000000),
+            10000000000000000000000000,
+            100000000000000000000000000000
+        ];
+        uint128[3] memory baseAmountValues = [
+            uint128(10000000000000000000),
+            1000000000000000000000,
+            100000000000000000000000
+        ];
+        uint128[3] memory timeTillMaturityValues = [
+            uint128(1000000),
+            1000000,
+            1000000
+        ];
+        int128[3] memory gNumerator = [int128(9), 95, 950];
+        int128[3] memory gDenominator = [int128(10), 100, 1000];
+        uint128 vyBaseReserve;
+        uint128 fyTokenReserve;
+        uint128 baseAmount;
+        uint128 timeTillMaturity;
+        int128 g;
+        for (uint256 index = 0; index < vyBaseReserveValues.length; index++) {
+            vyBaseReserve = vyBaseReserveValues[index];
+            fyTokenReserve = fyTokenReserveValues[index];
+            baseAmount = baseAmountValues[index];
+            timeTillMaturity = timeTillMaturityValues[index];
+            g = (gNumerator[index] * b) / gDenominator[index];
+            uint128 result1 = VariableYieldMath.fyTokenOutForVyBaseIn(
+                vyBaseReserve,
+                fyTokenReserve,
+                baseAmount,
+                timeTillMaturity,
+                k,
+                g,
+                ONE64
+            );
+
+            uint128 result2 = VariableYieldMath.fyTokenOutForVyBaseIn(
+                vyBaseReserve,
+                fyTokenReserve,
+                baseAmount,
+                timeTillMaturity,
+                k,
+                (int128(11) / int128(10)) * g, // increase g by 10%
+                ONE64
+            );
+
+            assertTrue(result1 <= result2); // TODO: is <= ok here?
+        }
+    }
+
+    // function testFail_TooHigh_fromInt_Math64x64() public pure {
+    //     Math64x64.fromInt(int256(0x7FFFFFFFFFFFFFFF + 1));
     // }
 
-    /* 1.  function pow(int256 x) internal pure returns (int128)
-     ***************************************************************/
+    // function testFail_TooLow_fromInt_Math64x64() public pure {
+    //     Math64x64.fromInt(int256(-0x8000000000000000 - 1));
+    // }
 
-    function testUnit_pow_Exp64x64() public {
-        uint128[7] memory xValues = [
-            uint128(0x0),
-            uint128(0x1000),
-            uint128(0x2000),
-            uint128(0x2000),
-            uint128(0x2000),
-            uint128(type(int128).max),
-            uint128(type(uint128).max)
-        ];
-        uint128[7] memory yValues = [
-            uint128(0x1000),
-            uint128(0x1000),
-            uint128(0x1000),
-            uint128(0x0),
-            uint128(0x1000),
-            uint128(0x1000),
-            uint128(0x1000)
-        ];
-        uint128[7] memory zValues = [
-            uint128(0x1000),
-            uint128(0x2000),
-            uint128(0x2000),
-            uint128(0x1000),
-            uint128(0x10000),
-            uint128(0x1000),
-            uint128(0x2000)
-        ];
-        uint128 x;
-        uint128 y;
-        uint128 z;
-        uint128 expectedResult;
-        uint128 result;
-        for (uint256 index = 0; index < xValues.length; index++) {
-            x = xValues[index];
-            y = yValues[index];
-            z = zValues[index];
+    // function testFuzz_fromInt_Math64x64(int256 passedIn) public {
+    //     int256 from = coerceInt256To128(
+    //         passedIn,
+    //         -0x8000000000000000,
+    //         0x7FFFFFFFFFFFFFFF
+    //     );
 
-            result = Exp64x64.pow(x, y, z);
-            if (x == 0) {
-                expectedResult = 0;
-            } else {
-                uint256 l = (uint256(
-                    0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF - Exp64x64.log_2(x)
-                ) * y) / z;
-                if (l > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) expectedResult = 0;
-                else
-                    expectedResult = Exp64x64.pow_2(
-                        uint128(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF - l)
-                    );
-            }
-            assertEq(expectedResult, result);
-        }
-    }
+    //     int128 result = Math64x64.fromInt(from);
 
-    function testFail_ZisZero_pow_Exp64x64() public pure {
-        Exp64x64.pow(uint128(0x1), uint128(0x1), uint128(0x0));
-    }
+    //     // Work backward to derive expected param
+    //     int64 expectedFrom = Math64x64.toInt(result);
+    //     assertEq(from, int256(expectedFrom));
 
-    function testFail_XandYZero_pow_Exp64x64() public pure {
-        Exp64x64.pow(uint128(0x0), uint128(0x0), uint128(0x1));
-    }
+    //     // Property Testing
+    //     // fn(x) < fn(x + 1)
+    //     bool overflows;
+    //     unchecked {
+    //         overflows = from > from + 1;
+    //     }
 
-    function testFuzz_pow_Exp64x64(
-        uint256 passedInX,
-        uint256 passedInY,
-        uint256 passedInZ
-    ) public {
-        uint128 x = coerceUInt256To128(passedInX);
-        uint128 y = coerceUInt256To128(passedInY);
-        uint128 z = coerceUInt256To128(passedInZ);
-        uint128 result = Exp64x64.pow(x, y, z);
-        uint128 expectedResult;
-        if (x == 0) {
-            expectedResult = 0;
-        } else {
-            uint256 l = (uint256(
-                0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF - Exp64x64.log_2(x)
-            ) * y) / z;
-            if (l > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) expectedResult = 0;
-            else
-                expectedResult = Exp64x64.pow_2(
-                    uint128(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF - l)
-                );
-        }
-        assertEq(expectedResult, result);
-    }
-
-    /* 2.  function log_2(uint128 x) internal pure returns (uint128)
-     ***************************************************************/
-
-    function testUnit_log_2_Exp64x64() public {
-        uint128[5] memory xValues = [
-            uint128(0x1),
-            uint128(0x1000),
-            uint128(0x2000),
-            uint128(type(int128).max),
-            uint128(type(uint128).max)
-        ];
-        uint128 x;
-        uint128 expectedResult;
-        uint128 result;
-        for (uint256 index = 0; index < xValues.length; index++) {
-            x = xValues[index];
-
-            result = Exp64x64.log_2(x);
-
-            expectedResult = log2exp64x64(x);
-
-            assertEq(expectedResult, result);
-        }
-    }
-
-    function testFail_Zero_log_2_Exp64x64() public pure {
-        Exp64x64.log_2(uint128(0x0));
-    }
-
-    function testFuzz_log_2_Exp64x64(uint256 passedInX) public {
-        if (passedInX ==0) passedInX = 0x1;
-        uint128 x = coerceUInt256To128(passedInX);
-
-        uint128 result = Exp64x64.log_2(x);
-
-        uint128 expectedResult = log2exp64x64(x);
-
-        assertEq(expectedResult, result);
-    }
-    /* 3.  function pow_2(uint128 x) internal pure returns (uint128)
-     ***************************************************************/
-
-    function testUnit_pow_2_Exp64x64() public {
-        uint128[5] memory xValues = [
-            uint128(0x1),
-            uint128(0x1000),
-            uint128(0x2000),
-            uint128(type(int128).max),
-            uint128(type(uint128).max)
-        ];
-        uint128 x;
-        uint128 expectedResult;
-        uint128 result;
-        for (uint256 index = 0; index < xValues.length; index++) {
-            x = xValues[index];
-
-            result = Exp64x64.pow_2(x);
-
-            expectedResult = pow2Exp64x64(x);
-
-            assertEq(expectedResult, result);
-        }
-    }
-
-    function testFail_Zero_pow_2_Exp64x64() public pure {
-        Exp64x64.pow_2(uint128(0x0));
-    }
-
-    function testFuzz_pow_2_Exp64x64(uint256 passedInX) public {
-        if (passedInX ==0) passedInX = 0x1;
-        uint128 x = coerceUInt256To128(passedInX);
-
-        uint128 result = Exp64x64.pow_2(x);
-
-        uint128 expectedResult = log2exp64x64(x);
-
-        assertEq(expectedResult, result);
-    }
+    //     if (!overflows && (from + 1 <= 0x7FFFFFFFFFFFFFFF)) {
+    //         assertTrue(Math64x64.fromInt(from + 1) > result);
+    //     }
+    //     // abs(fn(x)) < abs(x)
+    //     assertTrue(abs(result) >= abs(from));
+    // }
 }

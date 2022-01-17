@@ -15,7 +15,7 @@ contract Exp64x64Test is DSTest {
 
         Test name prefixe definitions:
         testUnit_          - Unit tests for common edge cases
-        testFail_<reason>  - Unit tests code reverts appropriately
+        testFail_<reason>_  - Unit tests code reverts appropriately
         testFuzz_          - Property based fuzz tests
         NOTE: These functions are too complex for symbolic execution
 
