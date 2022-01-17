@@ -71,40 +71,38 @@ contract VariableYieldMathTest is DSTest {
             1000000,
             1000000
         ];
-        int128[3] memory gNumerator = [int128(9), 95, 950];
+        int128[3] memory gNumerator = [int128(9), 95, 975];  //NOTE: changed idx 2 from original because I think they were the same
+        // https://github.com/yieldprotocol/YieldSpace-Farming/blob/dc3a61d290928cc921a9c482582bcf59083b692f/test/214_variable_yield_math_curve.ts#L80
         int128[3] memory gDenominator = [int128(10), 100, 1000];
         uint128 vyBaseReserve;
         uint128 fyTokenReserve;
         uint128 baseAmount;
         uint128 timeTillMaturity;
         int128 g;
-        for (uint256 index = 0; index < vyBaseReserveValues.length; index++) {
-            vyBaseReserve = vyBaseReserveValues[index];
-            fyTokenReserve = fyTokenReserveValues[index];
-            baseAmount = baseAmountValues[index];
-            timeTillMaturity = timeTillMaturityValues[index];
-            g = (gNumerator[index] * b) / gDenominator[index];
-            uint128 result1 = VariableYieldMath.fyTokenOutForVyBaseIn(
-                vyBaseReserve,
-                fyTokenReserve,
-                baseAmount,
-                timeTillMaturity,
-                k,
-                g,
-                ONE64
-            );
+        uint128 previousResult = uint128(0x0);
+        uint128 result;
+        for (uint256 i = 0; i < vyBaseReserveValues.length; i++) {
+            vyBaseReserve = vyBaseReserveValues[i];
+            fyTokenReserve = fyTokenReserveValues[i];
+            baseAmount = baseAmountValues[i];
+            timeTillMaturity = timeTillMaturityValues[i];
 
-            uint128 result2 = VariableYieldMath.fyTokenOutForVyBaseIn(
-                vyBaseReserve,
-                fyTokenReserve,
-                baseAmount,
-                timeTillMaturity,
-                k,
-                (int128(11) / int128(10)) * g, // increase g by 10%
-                ONE64
-            );
+            for (uint256 j = 0; j < vyBaseReserveValues.length; j++) {
+                g = (gNumerator[j] * b) / gDenominator[j];
+                result = VariableYieldMath.fyTokenOutForVyBaseIn(
+                    vyBaseReserve,
+                    fyTokenReserve,
+                    baseAmount,
+                    timeTillMaturity,
+                    k,
+                    g,
+                    ONE64
+                );
+                assertTrue(result > previousResult);
+                // NOTE: changed from original (moved the above line into this loop) because I think it was a mistake
 
-            assertTrue(result1 <= result2); // TODO: is <= ok here?
+            }
+            previousResult = result;
         }
     }
 

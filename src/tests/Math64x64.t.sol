@@ -43,7 +43,7 @@ contract Math64x64Test is DSTest {
 
         Test name prefix definitions:
         testUnit_          - Unit tests for common edge cases
-        testFail_<reason>_  - Unit tests code reverts appropriately
+        testFail_<reason>_ - Unit tests code reverts appropriately
         testFuzz_          - Property based fuzz tests
         prove_             - Symbolic execution
         NOTE: Symbolic execution tests found in separate file:
