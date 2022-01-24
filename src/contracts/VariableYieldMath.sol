@@ -29,7 +29,7 @@ library VariableYieldMath {
      * @param c price of vyBase in terms of Dai, multiplied by 2^64
      * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
      */
-    function fyTokenOutForVyBaseIn(
+    function old__fyTokenOutForVyBaseIn(
         uint128 vyBaseReserves,
         uint128 fyTokenReserves,
         uint128 vyBaseAmount,
@@ -76,6 +76,102 @@ library VariableYieldMath {
 
             fyTokenOut = uint128(result);
         }
+    }
+
+    /**
+     * Calculate the amount of fyToken a user would get for given amount of VyBase.
+     * https://www.desmos.com/calculator/5nf2xuy6yb
+     * @param vyBaseReserves vyBase reserves amount
+     * @param fyTokenReserves fyToken reserves amount
+     * @param vyBaseAmount vyBase amount to be traded
+     * @param timeTillMaturity time till maturity in seconds
+     * @param k time till maturity coefficient, multiplied by 2^64
+     * @param g fee coefficient, multiplied by 2^64
+     * @param c price of vyBase in terms of Dai, multiplied by 2^64
+     * @param mu (μ) starts as c at initialization
+     * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
+     *
+     *          (                        sum                           )
+     *            (    Za        )   ( Ya  )   (       Zxa         )   (   invA   )
+     * dy = y - ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
+     *
+     */
+    function fyTokenOutForVyBaseIn(
+        uint128 vyBaseReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 vyBaseAmount, // dx
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (uint128 fyTokenOut) {
+        unchecked {
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+
+            return
+                _fyTokenOutForVyBaseIn(
+                    vyBaseReserves,
+                    fyTokenReserves,
+                    vyBaseAmount,
+                    _computeA(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
+        }
+    }
+
+    function _fyTokenOutForVyBaseIn(
+        uint128 vyBaseReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 vyBaseAmount, // dx
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) internal pure returns (uint128 fyTokenOut) {
+        // adjustedVyBaseReserves = μ * vyBaseReserves
+        uint256 adjustedVyBaseReserves = mu.mulu(vyBaseReserves);
+        require(
+            adjustedVyBaseReserves <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // za = c/μ * (adjustedVyBaseReserves ** a)
+        uint256 za = c.div(mu).mulu(
+            uint128(adjustedVyBaseReserves).pow(a, ONE)
+        );
+        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+        // ya = fyTokenReserves ** a
+        uint256 ya = fyTokenReserves.pow(a, ONE);
+
+        // adjustedVyBaseAmount = μ * vyBaseAmount
+        uint256 adjustedVyBaseAmount = mu.mulu(vyBaseAmount);
+        require(
+            adjustedVyBaseAmount <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // zx = adjustedBaseReserves + vyBaseAmount * μ
+        uint256 zx = adjustedVyBaseReserves + adjustedVyBaseAmount;
+        require(zx <= MAX, "YieldMath: Too much vyBase in");
+
+        // zxa = c/μ * zx ** a
+        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
+        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
+
+        // sum = za + ya - zxa
+        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
+
+        // result = fyTokenReserves - (sum ** (1/a))
+        uint256 result = uint256(fyTokenReserves) -
+            uint256(uint128(sum).pow(ONE, a));
+        require(result <= MAX, "YieldMath: Rounding induced error");
+
+        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
+
+        fyTokenOut = uint128(result);
     }
 
     /**
@@ -258,7 +354,6 @@ library VariableYieldMath {
                     _computeA(timeTillMaturity, k, g),
                     c
                 );
-
         }
     }
 
@@ -343,6 +438,7 @@ library VariableYieldMath {
      * @param c0 price of vyBase in terms of vyBase as it was at protocol
      *        initialization time, multiplied by 2^64
      * @param c price of vyBase in terms of Dai, multiplied by 2^64
+     * @param mu (μ) starts as c at initialization
      * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
      */
     function fyTokenOutForVyBaseInNormalized(
@@ -353,7 +449,8 @@ library VariableYieldMath {
         int128 k,
         int128 g,
         int128 c0,
-        int128 c
+        int128 c,
+        int128 mu
     ) external pure returns (uint128 fyTokenOut) {
         unchecked {
             uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
@@ -375,7 +472,8 @@ library VariableYieldMath {
                 timeTillMaturity,
                 k,
                 g,
-                c.div(c0)
+                c.div(c0),
+                mu
             );
         }
     }

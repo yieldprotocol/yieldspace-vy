@@ -96,6 +96,7 @@ contract VariableYieldMathTest is DSTest {
                     timeTillMaturity,
                     k,
                     g,
+                    ONE64,
                     ONE64
                 );
                 assertTrue(result > previousResult);
