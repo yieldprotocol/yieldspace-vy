@@ -30,6 +30,11 @@ function coerceUInt256To128(uint256 passedIn) pure returns (uint128) {
     return uint128((passedIn % range) + min);
 }
 
+function coerceUInt256To128(uint256 passedIn, uint256 min, uint256 max) pure returns (uint128) {
+    uint256 range = max - min + 1;
+    return uint128((passedIn % range) + min);
+}
+
 function coerceInt256To128(int256 passedIn) pure returns (int128) {
     int256 min = type(int128).min;
     int256 max = type(int128).max;

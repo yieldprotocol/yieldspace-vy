@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 
+
 /**
  * Ethereum smart contract library implementing Yield Math model with variable yield tokens.
  */
@@ -17,22 +18,119 @@ library VariableYieldMath {
     uint128 public constant ONE = 0x10000000000000000; // In 64.64
     uint256 public constant MAX = type(uint128).max; // Used for overflow checks
 
-    /**
-     * Calculate the amount of fyToken a user would get for given amount of VyBase.
-     * https://www.desmos.com/calculator/5nf2xuy6yb
-     * @param vyBaseReserves vyBase reserves amount
+     /**
+     * Calculate the amount of fyToken a user would get for given amount of shares.
+     * https://www.desmos.com/calculator/bdplcpol2y
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
-     * @param vyBaseAmount vyBase amount to be traded
+     * @param sharesAmount shares amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @param mu (μ) Normalization factor -- starts as c at initialization
+     * @return fyTokenOut the amount of fyToken a user would get for given amount of Shares
+     *
+     *          (                        sum                           )
+     *            (    Za        )   ( Ya  )   (       Zxa         )   (   invA   )
+     * dy = y - ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
+     *
      */
-    function old__fyTokenOutForVyBaseIn(
-        uint128 vyBaseReserves,
+    function fyTokenOutForSharesIn(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 sharesAmount, // dx
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (uint128 fyTokenOut) {
+        unchecked {
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+
+            return
+                _fyTokenOutForSharesIn(
+                    sharesReserves,
+                    fyTokenReserves,
+                    sharesAmount,
+                    _computeA(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
+        }
+    }
+
+    function _fyTokenOutForSharesIn(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 sharesAmount, // dx
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) internal pure returns (uint128 fyTokenOut) {
+        // normalizedSharesReserves = μ * sharesReserves
+        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
+        require(
+            normalizedSharesReserves <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // za = c/μ * (normalizedSharesReserves ** a)
+        uint256 za = c.div(mu).mulu(
+            uint128(normalizedSharesReserves).pow(a, ONE)
+        );
+        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+        // ya = fyTokenReserves ** a
+        uint256 ya = fyTokenReserves.pow(a, ONE);
+
+        // normalizedSharesAmount = μ * sharesAmount
+        uint256 normalizedSharesAmount = mu.mulu(sharesAmount);
+        require(
+            normalizedSharesAmount <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // zx = normalizedBaseReserves + sharesAmount * μ
+        uint256 zx = normalizedSharesReserves + normalizedSharesAmount;
+        require(zx <= MAX, "YieldMath: Too much shares in");
+
+        // zxa = c/μ * zx ** a
+        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
+        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
+
+        // sum = za + ya - zxa
+        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
+
+        // result = fyTokenReserves - (sum ** (1/a))
+        uint256 result = uint256(fyTokenReserves) -
+            uint256(uint128(sum).pow(ONE, a));
+        require(result <= MAX, "YieldMath: Rounding induced error");
+
+        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
+
+        fyTokenOut = uint128(result);
+    }
+
+    /**
+     * Calculate the amount of fyToken a user would get for given amount of Shares.
+     * https://www.desmos.com/calculator/5nf2xuy6yb
+     * @param sharesReserves shares reserves amount
+     * @param fyTokenReserves fyToken reserves amount
+     * @param sharesAmount shares amount to be traded
+     * @param timeTillMaturity time till maturity in seconds
+     * @param k time till maturity coefficient, multiplied by 2^64
+     * @param g fee coefficient, multiplied by 2^64
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return fyTokenOut the amount of fyToken a user would get for given amount of Shares
+     */
+    /**
+    function old__fyTokenOutForSharesIn(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 vyBaseAmount,
+        uint128 sharesAmount,
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
@@ -42,8 +140,8 @@ library VariableYieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             uint128 a = _computeA(timeTillMaturity, k, g);
-            // za = c * (vyBaseReserves ** a)
-            uint256 za = c.mulu(vyBaseReserves.pow(a, ONE));
+            // za = c * (sharesReserves ** a)
+            uint256 za = c.mulu(sharesReserves.pow(a, ONE));
             require(
                 za <= MAX,
                 "YieldMath: Exchange rate overflow before trade"
@@ -52,9 +150,9 @@ library VariableYieldMath {
             // ya = fyTokenReserves ** a
             uint256 ya = fyTokenReserves.pow(a, ONE);
 
-            // zx = vyBaseReserves + vyBaseAmount
-            uint256 zx = uint256(vyBaseReserves) + uint256(vyBaseAmount);
-            require(zx <= MAX, "YieldMath: Too much vyBase in");
+            // zx = sharesReserves + sharesAmount
+            uint256 zx = uint256(sharesReserves) + uint256(sharesAmount);
+            require(zx <= MAX, "YieldMath: Too much shares in");
 
             // zxa = c * (zx ** a)
             uint256 zxa = c.mulu(uint128(zx).pow(a, ONE));
@@ -79,115 +177,19 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of fyToken a user would get for given amount of VyBase.
-     * https://www.desmos.com/calculator/5nf2xuy6yb
-     * @param vyBaseReserves vyBase reserves amount
-     * @param fyTokenReserves fyToken reserves amount
-     * @param vyBaseAmount vyBase amount to be traded
-     * @param timeTillMaturity time till maturity in seconds
-     * @param k time till maturity coefficient, multiplied by 2^64
-     * @param g fee coefficient, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @param mu (μ) starts as c at initialization
-     * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
-     *
-     *          (                        sum                           )
-     *            (    Za        )   ( Ya  )   (       Zxa         )   (   invA   )
-     * dy = y - ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
-     *
-     */
-    function fyTokenOutForVyBaseIn(
-        uint128 vyBaseReserves, // z
-        uint128 fyTokenReserves, // x
-        uint128 vyBaseAmount, // dx
-        uint128 timeTillMaturity,
-        int128 k,
-        int128 g,
-        int128 c,
-        int128 mu
-    ) public pure returns (uint128 fyTokenOut) {
-        unchecked {
-            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
-
-            return
-                _fyTokenOutForVyBaseIn(
-                    vyBaseReserves,
-                    fyTokenReserves,
-                    vyBaseAmount,
-                    _computeA(timeTillMaturity, k, g),
-                    c,
-                    mu
-                );
-        }
-    }
-
-    function _fyTokenOutForVyBaseIn(
-        uint128 vyBaseReserves, // z
-        uint128 fyTokenReserves, // x
-        uint128 vyBaseAmount, // dx
-        uint128 a,
-        int128 c,
-        int128 mu
-    ) internal pure returns (uint128 fyTokenOut) {
-        // adjustedVyBaseReserves = μ * vyBaseReserves
-        uint256 adjustedVyBaseReserves = mu.mulu(vyBaseReserves);
-        require(
-            adjustedVyBaseReserves <= MAX,
-            "YieldMath: Exchange rate overflow before trade"
-        );
-
-        // za = c/μ * (adjustedVyBaseReserves ** a)
-        uint256 za = c.div(mu).mulu(
-            uint128(adjustedVyBaseReserves).pow(a, ONE)
-        );
-        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // ya = fyTokenReserves ** a
-        uint256 ya = fyTokenReserves.pow(a, ONE);
-
-        // adjustedVyBaseAmount = μ * vyBaseAmount
-        uint256 adjustedVyBaseAmount = mu.mulu(vyBaseAmount);
-        require(
-            adjustedVyBaseAmount <= MAX,
-            "YieldMath: Exchange rate overflow before trade"
-        );
-
-        // zx = adjustedBaseReserves + vyBaseAmount * μ
-        uint256 zx = adjustedVyBaseReserves + adjustedVyBaseAmount;
-        require(zx <= MAX, "YieldMath: Too much vyBase in");
-
-        // zxa = c/μ * zx ** a
-        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
-        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
-
-        // sum = za + ya - zxa
-        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
-        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
-
-        // result = fyTokenReserves - (sum ** (1/a))
-        uint256 result = uint256(fyTokenReserves) -
-            uint256(uint128(sum).pow(ONE, a));
-        require(result <= MAX, "YieldMath: Rounding induced error");
-
-        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
-
-        fyTokenOut = uint128(result);
-    }
-
-    /**
-     * Calculate the amount of vyBase a user would get for certain amount of fyToken.
+     * Calculate the amount of shares a user would get for certain amount of fyToken.
      * https://www.desmos.com/calculator/6jlrre7ybt
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param fyTokenAmount fyToken amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return the amount of VyBase a user would get for given amount of fyToken
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return the amount of Shares a user would get for given amount of fyToken
      */
-    function vyBaseOutForFyTokenIn(
-        uint128 vyBaseReserves,
+    function sharesOutForFyTokenIn(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 timeTillMaturity,
@@ -199,8 +201,8 @@ library VariableYieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             return
-                _vyBaseOutForFyTokenIn(
-                    vyBaseReserves,
+                _sharesOutForFyTokenIn(
+                    sharesReserves,
                     fyTokenReserves,
                     fyTokenAmount,
                     _computeA(timeTillMaturity, k, g),
@@ -209,9 +211,9 @@ library VariableYieldMath {
         }
     }
 
-    /// @dev Splitting vyBaseOutForFyTokenIn in two functions to avoid stack depth limits.
-    function _vyBaseOutForFyTokenIn(
-        uint128 vyBaseReserves,
+    /// @dev Splitting sharesOutForFyTokenIn in two functions to avoid stack depth limits.
+    function _sharesOutForFyTokenIn(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 a,
@@ -221,8 +223,8 @@ library VariableYieldMath {
             // invC = 1 / c
             int128 invC = c.inv();
 
-            // za = c * (vyBaseReserves ** a)
-            uint256 za = c.mulu(vyBaseReserves.pow(a, ONE));
+            // za = c * (sharesReserves ** a)
+            uint256 za = c.mulu(sharesReserves.pow(a, ONE));
             require(
                 za <= MAX,
                 "YieldMath: Exchange rate overflow before trade"
@@ -240,14 +242,14 @@ library VariableYieldMath {
 
             // sum = za + ya - yxa
             uint256 sum = za + ya - yxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
-            require(sum <= MAX, "YieldMath: Insufficient vyBase reserves");
+            require(sum <= MAX, "YieldMath: Insufficient shares reserves");
 
             // (1/c) * sum
             uint256 invCsum = invC.mulu(sum);
             require(invCsum <= MAX, "YieldMath: c too close to zero");
 
-            // result = vyBaseReserves - (((1/c) * sum) ** (1/a))
-            uint256 result = uint256(vyBaseReserves) -
+            // result = sharesReserves - (((1/c) * sum) ** (1/a))
+            uint256 result = uint256(sharesReserves) -
                 uint256(uint128(invCsum).pow(ONE, a));
             require(result <= MAX, "YieldMath: Rounding induced error");
 
@@ -258,21 +260,21 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of fyToken a user could sell for given amount of VyBase.
+     * Calculate the amount of fyToken a user could sell for given amount of Shares.
      * https://www.desmos.com/calculator/0rgnmtckvy
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
-     * @param vyBaseAmount VyBase amount to be traded
+     * @param sharesAmount Shares amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return fyTokenIn the amount of fyToken a user could sell for given amount of VyBase
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return fyTokenIn the amount of fyToken a user could sell for given amount of Shares
      */
-    function fyTokenInForVyBaseOut(
-        uint128 vyBaseReserves,
+    function fyTokenInForSharesOut(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 vyBaseAmount,
+        uint128 sharesAmount,
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
@@ -283,8 +285,8 @@ library VariableYieldMath {
 
             uint128 a = _computeA(timeTillMaturity, k, g);
 
-            // za = c * (vyBaseReserves ** a)
-            uint256 za = c.mulu(vyBaseReserves.pow(a, ONE));
+            // za = c * (sharesReserves ** a)
+            uint256 za = c.mulu(sharesReserves.pow(a, ONE));
             require(
                 za <= MAX,
                 "YieldMath: Exchange rate overflow before trade"
@@ -293,9 +295,9 @@ library VariableYieldMath {
             // ya = fyTokenReserves ** a
             uint256 ya = fyTokenReserves.pow(a, ONE);
 
-            // zx = vyBaseReserves - vyBaseAmount
-            uint256 zx = uint256(vyBaseReserves) - uint256(vyBaseAmount);
-            require(zx <= MAX, "YieldMath: Too much vyBase out");
+            // zx = sharesReserves - sharesAmount
+            uint256 zx = uint256(sharesReserves) - uint256(sharesAmount);
+            require(zx <= MAX, "YieldMath: Too much shares out");
 
             // zxa = c * (zx ** a)
             uint256 zxa = c.mulu(uint128(zx).pow(a, ONE));
@@ -323,19 +325,19 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of vyBase a user would have to pay for certain amount of fyToken.
+     * Calculate the amount of shares a user would have to pay for certain amount of fyToken.
      * https://www.desmos.com/calculator/ws5oqj8x5i
-     * @param vyBaseReserves VyBase reserves amount
+     * @param sharesReserves Shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param fyTokenAmount fyToken amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return the amount of vyBase a user would have to pay for given amount of fyToken
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return the amount of shares a user would have to pay for given amount of fyToken
      */
-    function vyBaseInForFyTokenOut(
-        uint128 vyBaseReserves,
+    function sharesInForFyTokenOut(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 timeTillMaturity,
@@ -347,8 +349,8 @@ library VariableYieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             return
-                _vyBaseInForFyTokenOut(
-                    vyBaseReserves,
+                _sharesInForFyTokenOut(
+                    sharesReserves,
                     fyTokenReserves,
                     fyTokenAmount,
                     _computeA(timeTillMaturity, k, g),
@@ -357,9 +359,9 @@ library VariableYieldMath {
         }
     }
 
-    // /// @dev Splitting vyBaseInForFyTokenOut in two functions to avoid stack depth limits.
-    function _vyBaseInForFyTokenOut(
-        uint128 vyBaseReserves,
+    // /// @dev Splitting sharesInForFyTokenOut in two functions to avoid stack depth limits.
+    function _sharesInForFyTokenOut(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 a,
@@ -369,8 +371,8 @@ library VariableYieldMath {
             // invC = 1 / c
             int128 invC = c.inv();
 
-            // za = c * (vyBaseReserves ** a)
-            uint256 za = c.mulu(vyBaseReserves.pow(a, ONE));
+            // za = c * (sharesReserves ** a)
+            uint256 za = c.mulu(sharesReserves.pow(a, ONE));
             require(
                 za <= MAX,
                 "YieldMath: Exchange rate overflow before trade"
@@ -379,7 +381,7 @@ library VariableYieldMath {
             // ya = fyTokenReserves ** a
             uint256 ya = fyTokenReserves.pow(a, ONE);
 
-            // yx = vyBaseReserves - vyBaseAmount
+            // yx = sharesReserves - sharesAmount
             uint256 yx = uint256(fyTokenReserves) - uint256(fyTokenAmount);
             require(yx <= MAX, "YieldMath: Too much fyToken out");
 
@@ -390,16 +392,16 @@ library VariableYieldMath {
             uint256 sum = za + ya - yxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
             require(
                 sum <= MAX,
-                "YieldMath: Resulting vyBase reserves too high"
+                "YieldMath: Resulting shares reserves too high"
             );
 
             // (1/c) * sum
             uint256 invCsum = invC.mulu(sum);
             require(invCsum <= MAX, "YieldMath: c too close to zero");
 
-            // result = (((1/c) * sum) ** (1/a)) - vyBaseReserves
+            // result = (((1/c) * sum) ** (1/a)) - sharesReserves
             uint256 result = uint256(uint128(invCsum).pow(ONE, a)) -
-                uint256(vyBaseReserves);
+                uint256(sharesReserves);
             require(result <= MAX, "YieldMath: Rounding induced error");
 
             result = result < MAX - 1e12 ? result + 1e12 : MAX; // Add error guard, ceiling the result at max
@@ -426,25 +428,25 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of fyToken a user would get for given amount of VyBase.
+     * Calculate the amount of fyToken a user would get for given amount of Shares.
      * A normalization parameter is taken to normalize the exchange rate at a certain value.
      * This is used for liquidity pools to be initialized with balanced reserves.
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
-     * @param vyBaseAmount VyBase amount to be traded
+     * @param sharesAmount Shares amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of vyBase in terms of vyBase as it was at protocol
+     * @param c0 price of shares in terms of shares as it was at protocol
      *        initialization time, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
+     * @param c price of shares in terms of Dai, multiplied by 2^64
      * @param mu (μ) starts as c at initialization
-     * @return fyTokenOut the amount of fyToken a user would get for given amount of VyBase
+     * @return fyTokenOut the amount of fyToken a user would get for given amount of Shares
      */
-    function fyTokenOutForVyBaseInNormalized(
-        uint128 vyBaseReserves,
+    function fyTokenOutForSharesInNormalized(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 vyBaseAmount,
+        uint128 sharesAmount,
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
@@ -453,22 +455,22 @@ library VariableYieldMath {
         int128 mu
     ) external pure returns (uint128 fyTokenOut) {
         unchecked {
-            uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
+            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
             require(
-                normalizedVyBaseReserves <= MAX,
+                normalizedSharesReserves <= MAX,
                 "YieldMath: Overflow on reserve normalization"
             );
 
-            uint256 normalizedVyBaseAmount = c0.mulu(vyBaseAmount);
+            uint256 normalizedSharesAmount = c0.mulu(sharesAmount);
             require(
-                normalizedVyBaseAmount <= MAX,
+                normalizedSharesAmount <= MAX,
                 "YieldMath: Overflow on trade normalization"
             );
 
-            fyTokenOut = fyTokenOutForVyBaseIn(
-                uint128(normalizedVyBaseReserves),
+            fyTokenOut = fyTokenOutForSharesIn(
+                uint128(normalizedSharesReserves),
                 fyTokenReserves,
-                uint128(normalizedVyBaseAmount),
+                uint128(normalizedSharesAmount),
                 timeTillMaturity,
                 k,
                 g,
@@ -479,22 +481,22 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of vyBase a user would get for certain amount of fyToken.
+     * Calculate the amount of shares a user would get for certain amount of fyToken.
      * A normalization parameter is taken to normalize the exchange rate at a certain value.
      * This is used for liquidity pools to be initialized with balanced reserves.
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param fyTokenAmount fyToken amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of vyBase in terms of Dai as it was at protocol
+     * @param c0 price of shares in terms of Dai as it was at protocol
      *        initialization time, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return vyBaseOut the amount of vyBase a user would get for given amount of fyToken
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return sharesOut the amount of shares a user would get for given amount of fyToken
      */
-    function vyBaseOutForFyTokenInNormalized(
-        uint128 vyBaseReserves,
+    function sharesOutForFyTokenInNormalized(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 timeTillMaturity,
@@ -502,17 +504,17 @@ library VariableYieldMath {
         int128 g,
         int128 c0,
         int128 c
-    ) external pure returns (uint128 vyBaseOut) {
+    ) external pure returns (uint128 sharesOut) {
         unchecked {
-            uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
+            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
             require(
-                normalizedVyBaseReserves <= MAX,
+                normalizedSharesReserves <= MAX,
                 "YieldMath: Overflow on reserve normalization"
             );
 
             uint256 result = c0.inv().mulu(
-                vyBaseOutForFyTokenIn(
-                    uint128(normalizedVyBaseReserves),
+                sharesOutForFyTokenIn(
+                    uint128(normalizedSharesReserves),
                     fyTokenReserves,
                     fyTokenAmount,
                     timeTillMaturity,
@@ -526,28 +528,28 @@ library VariableYieldMath {
                 "YieldMath: Overflow on result normalization"
             );
 
-            vyBaseOut = uint128(result);
+            sharesOut = uint128(result);
         }
     }
 
     /**
-     * Calculate the amount of fyToken a user could sell for given amount of VyBase.
+     * Calculate the amount of fyToken a user could sell for given amount of Shares.
      *
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
-     * @param vyBaseAmount vyBase amount to be traded
+     * @param sharesAmount shares amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of vyBase in terms of Dai as it was at protocol
+     * @param c0 price of shares in terms of Dai as it was at protocol
      *        initialization time, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return fyTokenIn the amount of fyToken a user could sell for given amount of VyBase
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return fyTokenIn the amount of fyToken a user could sell for given amount of Shares
      */
-    function fyTokenInForVyBaseOutNormalized(
-        uint128 vyBaseReserves,
+    function fyTokenInForSharesOutNormalized(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 vyBaseAmount,
+        uint128 sharesAmount,
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
@@ -555,22 +557,22 @@ library VariableYieldMath {
         int128 c
     ) external pure returns (uint128 fyTokenIn) {
         unchecked {
-            uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
+            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
             require(
-                normalizedVyBaseReserves <= MAX,
+                normalizedSharesReserves <= MAX,
                 "YieldMath: Overflow on reserve normalization"
             );
 
-            uint256 normalizedVyBaseAmount = c0.mulu(vyBaseAmount);
+            uint256 normalizedSharesAmount = c0.mulu(sharesAmount);
             require(
-                normalizedVyBaseAmount <= MAX,
+                normalizedSharesAmount <= MAX,
                 "YieldMath: Overflow on trade normalization"
             );
 
-            fyTokenIn = fyTokenInForVyBaseOut(
-                uint128(normalizedVyBaseReserves),
+            fyTokenIn = fyTokenInForSharesOut(
+                uint128(normalizedSharesReserves),
                 fyTokenReserves,
-                uint128(normalizedVyBaseAmount),
+                uint128(normalizedSharesAmount),
                 timeTillMaturity,
                 k,
                 g,
@@ -580,22 +582,22 @@ library VariableYieldMath {
     }
 
     /**
-     * Calculate the amount of VyBase a user would have to pay for certain amount of
+     * Calculate the amount of Shares a user would have to pay for certain amount of
      * fyToken.
      *
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param fyTokenAmount fyToken amount to be traded
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of vyBase in terms of VyBase as it was at protocol
+     * @param c0 price of shares in terms of Shares as it was at protocol
      *        initialization time, multiplied by 2^64
-     * @param c price of vyBase in terms of Dai, multiplied by 2^64
-     * @return vyBaseIn the amount of vyBase a user would have to pay for given amount of fyToken
+     * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @return sharesIn the amount of shares a user would have to pay for given amount of fyToken
      */
-    function vyBaseInForFyTokenOutNormalized(
-        uint128 vyBaseReserves,
+    function sharesInForFyTokenOutNormalized(
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
         uint128 timeTillMaturity,
@@ -603,17 +605,17 @@ library VariableYieldMath {
         int128 g,
         int128 c0,
         int128 c
-    ) external pure returns (uint128 vyBaseIn) {
+    ) external pure returns (uint128 sharesIn) {
         unchecked {
-            uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
+            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
             require(
-                normalizedVyBaseReserves <= MAX,
+                normalizedSharesReserves <= MAX,
                 "YieldMath: Overflow on reserve normalization"
             );
 
             uint256 result = c0.inv().mulu(
-                vyBaseInForFyTokenOut(
-                    uint128(normalizedVyBaseReserves),
+                sharesInForFyTokenOut(
+                    uint128(normalizedSharesReserves),
                     fyTokenReserves,
                     fyTokenAmount,
                     timeTillMaturity,
@@ -627,37 +629,37 @@ library VariableYieldMath {
                 "YieldMath: Overflow on result normalization"
             );
 
-            vyBaseIn = uint128(result);
+            sharesIn = uint128(result);
         }
     }
 
     /**
-     * Estimate in VyBase the value of reserves at protocol initialization time.
+     * Estimate in Shares the value of reserves at protocol initialization time.
      *
-     * @param vyBaseReserves vyBase reserves amount
+     * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param timeTillMaturity time till maturity in seconds
      * @param k time till maturity coefficient, multiplied by 2^64
-     * @param c0 price of vyBase in terms of Dai, multiplied by 2^64
+     * @param c0 price of shares in terms of Dai, multiplied by 2^64
      * @return initialReserves estimated value of reserves
      */
     function initialReservesValue(
-        uint128 vyBaseReserves,
+        uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 timeTillMaturity,
         int128 k,
         int128 c0
     ) external pure returns (uint128 initialReserves) {
         unchecked {
-            uint256 normalizedVyBaseReserves = c0.mulu(vyBaseReserves);
-            require(normalizedVyBaseReserves <= MAX);
+            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
+            require(normalizedSharesReserves <= MAX);
 
             // a = (1 - k * timeTillMaturity)
             int128 a = int128(ONE).sub(k.mul(timeTillMaturity.fromUInt()));
             require(a > 0);
 
             uint256 sum = (uint256(
-                uint128(normalizedVyBaseReserves).pow(uint128(a), ONE)
+                uint128(normalizedSharesReserves).pow(uint128(a), ONE)
             ) + uint256(fyTokenReserves.pow(uint128(a), ONE))) >> 1;
             require(sum <= MAX);
 
