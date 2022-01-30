@@ -77,7 +77,7 @@ contract VariableYieldMathTest is DSTest {
     }
 
     /* 1. function fyTokenOutForSharesIn
-     * https://www.desmos.com/calculator/bdplcpol2y
+     * https://www.desmos.com/calculator/7iebbri94t
      ***************************************************************/
     // NOTE: MATH REVERTS WHEN ALL OF ONE RESOURCE IS DEPLETED
 
@@ -132,19 +132,47 @@ contract VariableYieldMathTest is DSTest {
             c,
             mu
         ) / 10**18;
-        uint128 expectedResult = uint128(amount * cNumerator / cDenominator) / 10 ** 18;
+        uint128 expectedResult = uint128((amount * cNumerator) / cDenominator) /
+            10**18;
 
         // When rounding should round in favor of the pool
         assertSameOrSlightlyLess(result, expectedResult);
     }
 
+    function testUnit_fyTokenOutForSharesIn__increaseG() public {
+        // increase in g results in increase in fyTokenOut
+        // NOTE: potential fuzz test
+        uint128 amount = uint128(100000 * 10**18);
+        uint128 result1 = VariableYieldMath.fyTokenOutForSharesIn(
+            sharesReserve,
+            fyTokenReserve,
+            amount,
+            timeTillMaturity,
+            k,
+            g1,
+            c,
+            mu
+        ) / 10**18;
+
+        int128 bumpedG = uint256(975).fromUInt().div(gDenominator.fromUInt());
+        uint128 result2 = VariableYieldMath.fyTokenOutForSharesIn(
+            sharesReserve,
+            fyTokenReserve,
+            amount,
+            timeTillMaturity,
+            k,
+            bumpedG,
+            c,
+            mu
+        ) / 10**18;
+        assertTrue(result2 > result1);
+    }
+
     // TODO: should mirror sharesInforFyTokenOut
 
-
-    // When t approaches 1, it becomes very similar to uniswap AMM pricing formula
     // As g increases, fyDaiIn increases (part of Alberto’s original tests in YieldspaceFarming repo)
-    // Should revert if over reserves
     //
+    // TODO: Should revert if over reserves
     function testUnit_fyTokenOutForSharesIn__wenBreak() public {
         uint128 result;
         for (uint256 idx; idx < 200; idx++) {
@@ -192,96 +220,46 @@ contract VariableYieldMathTest is DSTest {
         }
         assertTrue(result > sharesAmount);
     }
-    // 105085 361790093746506072
-    // function testUnit_old_fyTokenOutForSharesIn_VariableYieldMath() public {
-    //     uint128[3] memory sharesReserveValues = [
-    //         uint128(10000000000000000000000),
-    //         100000000000000000000000000,
-    //         1000000000000000000000000000000
-    //     ];
-    //     uint128[3] memory fyTokenReserveValues = [
-    //         uint128(1000000000000000000000),
-    //         10000000000000000000000000,
-    //         10000000000000000000000000,
-    //         100000000000000000000000000000
-    //     ];
-    //     uint128[3] memory baseAmountValues = [
-    //         uint128(10000000000000000000),
-    //         1000000000000000000000,
-    //         100000000000000000000000
-    //     ];
-    //     uint128[3] memory timeTillMaturityValues = [
-    //         uint128(1000000),
-    //         1000000,
-    //         1000000
-    //     ];
-    //     int128[3] memory gNumerator = [int128(9), 95, 975]; //NOTE: changed idx 2 from original because I think they were the same
-    //     // https://github.com/yieldprotocol/YieldSpace-Farming/blob/dc3a61d290928cc921a9c482582bcf59083b692f/test/214_variable_yield_math_curve.ts#L80
-    //     int128[3] memory gDenominator = [int128(10), 100, 1000];
-    //     uint128 sharesReserve;
-    //     uint128 fyTokenReserve;
-    //     uint128 baseAmount;
-    //     uint128 timeTillMaturity;
-    //     int128 g;
-    //     uint128 previousResult = uint128(0x0);
-    //     uint128 result;
-    //     for (uint256 i = 0; i < sharesReserveValues.length; i++) {
-    //         sharesReserve = sharesReserveValues[i];
-    //         fyTokenReserve = fyTokenReserveValues[i];
-    //         baseAmount = baseAmountValues[i];
-    //         timeTillMaturity = timeTillMaturityValues[i];
 
-    //         for (uint256 j = 0; j < sharesReserveValues.length; j++) {
-    //             g = (gNumerator[j] * b) / gDenominator[j];
-    //             result = VariableYieldMath.fyTokenOutForSharesIn(
-    //                 sharesReserve,
-    //                 fyTokenReserve,
-    //                 baseAmount,
-    //                 timeTillMaturity,
-    //                 k,
-    //                 g,
-    //                 ONE64,
-    //                 ONE64
-    //             );
-    //             assertTrue(result > previousResult);
-    //             // NOTE: changed from original (moved the above line into this loop) because I think it was a mistake
-    //         }
-    //         previousResult = result;
-    //     }
-    // }
+    /* 2. function sharesInForFyTokenOut
+     *
+     ***************************************************************/
+    // NOTE: MATH REVERTS WHEN ALL OF ONE RESOURCE IS DEPLETED
+        function testUnit_sharesInForFyTokenOut__baseCases() public {
+        // should match Desmos for selected inputs
+        uint128[1] memory fyTokenAmounts = [
+            // uint128(50000 * 10**18),
+            uint128(100000 * 10**18)
+            // uint128(200000 * 10**18),
+            // uint128(830240163000000000000000)
+        ];
+        uint128[1] memory expectedResults = [
+            // uint128(54844),
+            // uint128(109632),
+            // uint128(219036),
+            uint128(91205)
+        ];
+        uint128 result;
+        for (uint256 idx; idx < fyTokenAmounts.length; idx++) {
+            emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
+            emit log_named_uint("fyTokenReserve", fyTokenReserve);
+            result =
+                VariableYieldMath.sharesInForFyTokenOut(
+                    sharesReserve,
+                    fyTokenReserve,
+                    fyTokenAmounts[idx], // x or ΔZ
+                    timeTillMaturity,
+                    k,
+                    g1,
+                    c,
+                    mu
+                ) / 10 ** 18;
+            emit log_named_uint("result", result);
+            emit log_named_uint("expectedResult", expectedResults[idx]);
 
-    // function testFail_TooHigh_fromInt_Math64x64() public pure {
-    //     Math64x64.fromInt(int256(0x7FFFFFFFFFFFFFFF + 1));
-    // }
+            // When rounding should round in favor of the pool
+            assertSameOrSlightlyLess(result, expectedResults[idx]);
+        }
+    }
 
-    // function testFail_TooLow_fromInt_Math64x64() public pure {
-    //     Math64x64.fromInt(int256(-0x8000000000000000 - 1));
-    // }
-
-    // function testFuzz_fromInt_Math64x64(int256 passedIn) public {
-    //     int256 from = coerceInt256To128(
-    //         passedIn,
-    //         -0x8000000000000000,
-    //         0x7FFFFFFFFFFFFFFF
-    //     );
-
-    //     int128 result = Math64x64.fromInt(from);
-
-    //     // Work backward to derive expected param
-    //     int64 expectedFrom = Math64x64.toInt(result);
-    //     assertEq(from, int256(expectedFrom));
-
-    //     // Property Testing
-    //     // fn(x) < fn(x + 1)
-    //     bool overflows;
-    //     unchecked {
-    //         overflows = from > from + 1;
-    //     }
-
-    //     if (!overflows && (from + 1 <= 0x7FFFFFFFFFFFFFFF)) {
-    //         assertTrue(Math64x64.fromInt(from + 1) > result);
-    //     }
-    //     // abs(fn(x)) < abs(x)
-    //     assertTrue(abs(result) >= abs(from));
-    // }
 }
