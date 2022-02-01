@@ -341,7 +341,7 @@ library VariableYieldMath {
             subtotalLeft <= MAX,
             "YieldMath: Exchange rate overflow before trade"
         );
-        // SOMETHINGS REVERTING HERE:
+
         int128 subtotal = subtotalLeft.divu(uint128(c.div(mu)));
         uint128 subtotalRaised = uint128(subtotal).pow(uint128(ONE), uint128(a));
         int128 invMu = int128(ONE).div(mu);
