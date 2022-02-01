@@ -67,7 +67,7 @@ library VariableYieldMath {
         uint128 a,
         int128 c,
         int128 mu
-    ) internal pure returns (uint128 fyTokenOut) {
+    ) internal pure returns (uint128) {
         // normalizedSharesReserves = μ * sharesReserves
         uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
         require(
@@ -108,9 +108,9 @@ library VariableYieldMath {
             uint256(uint128(sum).pow(ONE, a));
         require(result <= MAX, "YieldMath: Rounding induced error");
 
-        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
+        result = result < MAX - 1e12 ? result + 1e12 : MAX; // Add error guard, ceiling the result at max
 
-        fyTokenOut = uint128(result);
+        return uint128(result);
     }
 
     /**
@@ -163,7 +163,7 @@ library VariableYieldMath {
         uint128 a,
         int128 c,
         int128 mu
-    ) private pure returns (uint128) {
+    ) private pure returns (uint128 result) {
         // normalizedSharesReserves = μ * sharesReserves
         uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
         require(
@@ -202,12 +202,12 @@ library VariableYieldMath {
             "YieldMath: Exchange rate underflow before trade"
         );
 
-        return sharesReserves - uint128(rightSide);
+        result = sharesReserves - uint128(rightSide);
     }
 
     /**
      * Calculate the amount of fyToken a user could sell for given amount of Shares.
-     * https://www.desmos.com/calculator/0rgnmtckvy
+     * https://www.desmos.com/calculator/5sbqbquaxq
      * @param sharesReserves shares reserves amount
      * @param fyTokenReserves fyToken reserves amount
      * @param sharesAmount Shares amount to be traded
@@ -215,7 +215,13 @@ library VariableYieldMath {
      * @param k time till maturity coefficient, multiplied by 2^64
      * @param g fee coefficient, multiplied by 2^64
      * @param c price of shares in terms of Dai, multiplied by 2^64
+     * @param mu (μ) Normalization factor -- starts as c at initialization
      * @return fyTokenIn the amount of fyToken a user could sell for given amount of Shares
+     *
+     *      (                  sum                                )
+     *        (    Za        )   ( Ya  )   (      Zxa           )   (   invA   )
+     * dy = ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz - μx)^(1-t) )^(1 / (1 - t)) - y
+     *
      */
     function fyTokenInForSharesOut(
         uint128 sharesReserves,
@@ -224,50 +230,75 @@ library VariableYieldMath {
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
-        int128 c
+        int128 c,
+        int128 mu
     ) public pure returns (uint128 fyTokenIn) {
         unchecked {
             require(c > 0, "YieldMath: c must be positive");
 
-            uint128 a = _computeA(timeTillMaturity, k, g);
-
-            // za = c * (sharesReserves ** a)
-            uint256 za = c.mulu(sharesReserves.pow(a, ONE));
-            require(
-                za <= MAX,
-                "YieldMath: Exchange rate overflow before trade"
-            );
-
-            // ya = fyTokenReserves ** a
-            uint256 ya = fyTokenReserves.pow(a, ONE);
-
-            // zx = sharesReserves - sharesAmount
-            uint256 zx = uint256(sharesReserves) - uint256(sharesAmount);
-            require(zx <= MAX, "YieldMath: Too much shares out");
-
-            // zxa = c * (zx ** a)
-            uint256 zxa = c.mulu(uint128(zx).pow(a, ONE));
-            require(
-                zxa <= MAX,
-                "YieldMath: Exchange rate overflow after trade"
-            );
-
-            // sum = za + ya - zxa
-            uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
-            require(
-                sum <= MAX,
-                "YieldMath: Resulting fyToken reserves too high"
-            );
-
-            // result = (sum ** (1/a)) - fyTokenReserves
-            uint256 result = uint256(uint128(sum).pow(ONE, a)) -
-                uint256(fyTokenReserves);
-            require(result <= MAX, "YieldMath: Rounding induced error");
-
-            result = result < MAX - 1e12 ? result + 1e12 : MAX; // Add error guard, ceiling the result at max
-
-            fyTokenIn = uint128(result);
+            return
+                _fyTokenInForSharesOut(
+                    sharesReserves,
+                    fyTokenReserves,
+                    sharesAmount,
+                    _computeA(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
         }
+    }
+
+    function _fyTokenInForSharesOut(
+        uint128 sharesReserves,
+        uint128 fyTokenReserves,
+        uint128 sharesAmount,
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) public pure returns (uint128 fyTokenIn) {
+        // normalizedSharesReserves = μ * sharesReserves
+        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
+        require(
+            normalizedSharesReserves <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // za = c/μ * (normalizedSharesReserves ** a)
+        uint256 za = c.div(mu).mulu(
+            uint128(normalizedSharesReserves).pow(a, ONE)
+        );
+        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+        // ya = fyTokenReserves ** a
+        uint256 ya = fyTokenReserves.pow(a, ONE);
+
+        // normalizedSharesAmount = μ * sharesAmount
+        uint256 normalizedSharesAmount = mu.mulu(sharesAmount);
+        require(
+            normalizedSharesAmount <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // zx = normalizedBaseReserves + sharesAmount * μ
+        uint256 zx = normalizedSharesReserves - normalizedSharesAmount;
+        require(zx <= MAX, "YieldMath: Too much shares in");
+
+        // zxa = c/μ * zx ** a
+        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
+        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
+
+        // sum = za + ya - zxa
+        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
+
+        // result = fyTokenReserves - (sum ** (1/a))
+        uint256 result = uint256(uint128(sum).pow(ONE, a)) -
+            uint256(fyTokenReserves);
+        require(result <= MAX, "YieldMath: Rounding induced error");
+
+        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
+
+        return uint128(result);
     }
 
     /**
@@ -291,14 +322,6 @@ library VariableYieldMath {
      *              (     Za       )  (  Ya  )   (    Yxa     )             (   invA   )
      * dz = 1/μ * ( ( c/μ * μz^(1-t) + y^(1-t) - (y - x)^(1-t) ) / (c/μ) )^(1 / (1 - t)) - z
      *
-     */
-
-    /// correct one:
-
-    /**
-     *                (                      sum                                       )
-     *                  (       Za           )   ( Ya  )    (    Yxa     )               (   invA   )
-     * dz = z - 1/μ  * ( ( (c / μ) * (μz)^(1-t) + y^(1-t) -  (y + x)^(1-t) ) / (c / μ) )^(1 / (1 - t))
      */
     function sharesInForFyTokenOut(
         uint128 sharesReserves,
@@ -445,106 +468,106 @@ library VariableYieldMath {
         }
     }
 
-    /**
-     * Calculate the amount of shares a user would get for certain amount of fyToken.
-     * A normalization parameter is taken to normalize the exchange rate at a certain value.
-     * This is used for liquidity pools to be initialized with balanced reserves.
-     * @param sharesReserves shares reserves amount
-     * @param fyTokenReserves fyToken reserves amount
-     * @param fyTokenAmount fyToken amount to be traded
-     * @param timeTillMaturity time till maturity in seconds
-     * @param k time till maturity coefficient, multiplied by 2^64
-     * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of shares in terms of Dai as it was at protocol
-     *        initialization time, multiplied by 2^64
-     * @param c price of shares in terms of Dai, multiplied by 2^64
-     * @return sharesOut the amount of shares a user would get for given amount of fyToken
-     */
-    function sharesOutForFyTokenInNormalized(
-        uint128 sharesReserves,
-        uint128 fyTokenReserves,
-        uint128 fyTokenAmount,
-        uint128 timeTillMaturity,
-        int128 k,
-        int128 g,
-        int128 c0,
-        int128 c
-    ) external pure returns (uint128 sharesOut) {
-        unchecked {
-            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
-            require(
-                normalizedSharesReserves <= MAX,
-                "YieldMath: Overflow on reserve normalization"
-            );
+    // /**
+    //  * Calculate the amount of shares a user would get for certain amount of fyToken.
+    //  * A normalization parameter is taken to normalize the exchange rate at a certain value.
+    //  * This is used for liquidity pools to be initialized with balanced reserves.
+    //  * @param sharesReserves shares reserves amount
+    //  * @param fyTokenReserves fyToken reserves amount
+    //  * @param fyTokenAmount fyToken amount to be traded
+    //  * @param timeTillMaturity time till maturity in seconds
+    //  * @param k time till maturity coefficient, multiplied by 2^64
+    //  * @param g fee coefficient, multiplied by 2^64
+    //  * @param c0 price of shares in terms of Dai as it was at protocol
+    //  *        initialization time, multiplied by 2^64
+    //  * @param c price of shares in terms of Dai, multiplied by 2^64
+    //  * @return sharesOut the amount of shares a user would get for given amount of fyToken
+    //  */
+    // function sharesOutForFyTokenInNormalized(
+    //     uint128 sharesReserves,
+    //     uint128 fyTokenReserves,
+    //     uint128 fyTokenAmount,
+    //     uint128 timeTillMaturity,
+    //     int128 k,
+    //     int128 g,
+    //     int128 c0,
+    //     int128 c
+    // ) external pure returns (uint128 sharesOut) {
+    //     unchecked {
+    //         uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
+    //         require(
+    //             normalizedSharesReserves <= MAX,
+    //             "YieldMath: Overflow on reserve normalization"
+    //         );
 
-            uint256 result = c0.inv().mulu(
-                sharesOutForFyTokenIn(
-                    uint128(normalizedSharesReserves),
-                    fyTokenReserves,
-                    fyTokenAmount,
-                    timeTillMaturity,
-                    k,
-                    g,
-                    c.div(c0)
-                )
-            );
-            require(
-                result <= MAX,
-                "YieldMath: Overflow on result normalization"
-            );
+    //         uint256 result = c0.inv().mulu(
+    //             sharesOutForFyTokenIn(
+    //                 uint128(normalizedSharesReserves),
+    //                 fyTokenReserves,
+    //                 fyTokenAmount,
+    //                 timeTillMaturity,
+    //                 k,
+    //                 g,
+    //                 c.div(c0)
+    //             )
+    //         );
+    //         require(
+    //             result <= MAX,
+    //             "YieldMath: Overflow on result normalization"
+    //         );
 
-            sharesOut = uint128(result);
-        }
-    }
+    //         sharesOut = uint128(result);
+    //     }
+    // }
 
-    /**
-     * Calculate the amount of fyToken a user could sell for given amount of Shares.
-     *
-     * @param sharesReserves shares reserves amount
-     * @param fyTokenReserves fyToken reserves amount
-     * @param sharesAmount shares amount to be traded
-     * @param timeTillMaturity time till maturity in seconds
-     * @param k time till maturity coefficient, multiplied by 2^64
-     * @param g fee coefficient, multiplied by 2^64
-     * @param c0 price of shares in terms of Dai as it was at protocol
-     *        initialization time, multiplied by 2^64
-     * @param c price of shares in terms of Dai, multiplied by 2^64
-     * @return fyTokenIn the amount of fyToken a user could sell for given amount of Shares
-     */
-    function fyTokenInForSharesOutNormalized(
-        uint128 sharesReserves,
-        uint128 fyTokenReserves,
-        uint128 sharesAmount,
-        uint128 timeTillMaturity,
-        int128 k,
-        int128 g,
-        int128 c0,
-        int128 c
-    ) external pure returns (uint128 fyTokenIn) {
-        unchecked {
-            uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
-            require(
-                normalizedSharesReserves <= MAX,
-                "YieldMath: Overflow on reserve normalization"
-            );
+    // /**
+    //  * Calculate the amount of fyToken a user could sell for given amount of Shares.
+    //  *
+    //  * @param sharesReserves shares reserves amount
+    //  * @param fyTokenReserves fyToken reserves amount
+    //  * @param sharesAmount shares amount to be traded
+    //  * @param timeTillMaturity time till maturity in seconds
+    //  * @param k time till maturity coefficient, multiplied by 2^64
+    //  * @param g fee coefficient, multiplied by 2^64
+    //  * @param c0 price of shares in terms of Dai as it was at protocol
+    //  *        initialization time, multiplied by 2^64
+    //  * @param c price of shares in terms of Dai, multiplied by 2^64
+    //  * @return fyTokenIn the amount of fyToken a user could sell for given amount of Shares
+    //  */
+    // function fyTokenInForSharesOutNormalized(
+    //     uint128 sharesReserves,
+    //     uint128 fyTokenReserves,
+    //     uint128 sharesAmount,
+    //     uint128 timeTillMaturity,
+    //     int128 k,
+    //     int128 g,
+    //     int128 c0,
+    //     int128 c
+    // ) external pure returns (uint128 fyTokenIn) {
+    //     unchecked {
+    //         uint256 normalizedSharesReserves = c0.mulu(sharesReserves);
+    //         require(
+    //             normalizedSharesReserves <= MAX,
+    //             "YieldMath: Overflow on reserve normalization"
+    //         );
 
-            uint256 normalizedSharesAmount = c0.mulu(sharesAmount);
-            require(
-                normalizedSharesAmount <= MAX,
-                "YieldMath: Overflow on trade normalization"
-            );
+    //         uint256 normalizedSharesAmount = c0.mulu(sharesAmount);
+    //         require(
+    //             normalizedSharesAmount <= MAX,
+    //             "YieldMath: Overflow on trade normalization"
+    //         );
 
-            fyTokenIn = fyTokenInForSharesOut(
-                uint128(normalizedSharesReserves),
-                fyTokenReserves,
-                uint128(normalizedSharesAmount),
-                timeTillMaturity,
-                k,
-                g,
-                c.div(c0)
-            );
-        }
-    }
+    //         fyTokenIn = fyTokenInForSharesOut(
+    //             uint128(normalizedSharesReserves),
+    //             fyTokenReserves,
+    //             uint128(normalizedSharesAmount),
+    //             timeTillMaturity,
+    //             k,
+    //             g,
+    //             c.div(c0)
+    //         );
+    //     }
+    // }
 
     // /**
     //  * Calculate the amount of Shares a user would have to pay for certain amount of
