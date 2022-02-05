@@ -90,7 +90,7 @@ contract VariableYieldMathTest is DSTest {
 
     function testUnit_fyTokenOutForSharesIn__baseCases() public {
         // should match Desmos for selected inputs
-        uint128[4] memory baseAmounts = [
+        uint128[4] memory sharesAmounts = [
             uint128(50000 * 10**18),
             uint128(100000 * 10**18),
             uint128(200000 * 10**18),
@@ -103,14 +103,14 @@ contract VariableYieldMathTest is DSTest {
             uint128(900000)
         ];
         uint128 result;
-        for (uint256 idx; idx < baseAmounts.length; idx++) {
-            emit log_named_uint("sharesAmount", baseAmounts[idx]);
+        for (uint256 idx; idx < sharesAmounts.length; idx++) {
+            emit log_named_uint("sharesAmount", sharesAmounts[idx]);
             emit log_named_uint("sharesReserves", sharesReserves);
             result =
                 VariableYieldMath.fyTokenOutForSharesIn(
                     sharesReserves,
                     fyTokenReserves,
-                    baseAmounts[idx], // x or ΔZ
+                    sharesAmounts[idx], // x or ΔZ
                     timeTillMaturity,
                     k,
                     g1,
@@ -128,21 +128,21 @@ contract VariableYieldMathTest is DSTest {
 
     function testUnit_fyTokenOutForSharesIn__mirror() public {
         // should match Desmos for selected inputs
-        uint128[4] memory baseAmounts = [
+        uint128[4] memory sharesAmounts = [
             uint128(50000 * 10**18),
             uint128(100000 * 10**18),
             uint128(200000 * 10**18),
             uint128(830240163000000000000000)
         ];
         uint128 result;
-        for (uint256 idx; idx < baseAmounts.length; idx++) {
-            emit log_named_uint("sharesAmount", baseAmounts[idx]);
+        for (uint256 idx; idx < sharesAmounts.length; idx++) {
+            emit log_named_uint("sharesAmount", sharesAmounts[idx]);
             emit log_named_uint("sharesReserves", sharesReserves);
             result =
                 VariableYieldMath.fyTokenOutForSharesIn(
                     sharesReserves,
                     fyTokenReserves,
-                    baseAmounts[idx], // x or ΔZ
+                    sharesAmounts[idx], // x or ΔZ
                     timeTillMaturity,
                     k,
                     g1,
@@ -162,7 +162,7 @@ contract VariableYieldMathTest is DSTest {
             );
             emit log_named_uint("resultShares", resultShares);
 
-            assertSameOrSlightlyLess(resultShares / 10 ** 18, baseAmounts[idx] / 10 ** 18);
+            assertSameOrSlightlyLess(resultShares / 10 ** 18, sharesAmounts[idx] / 10 ** 18);
         }
     }
 
@@ -215,10 +215,6 @@ contract VariableYieldMathTest is DSTest {
         assertTrue(result2 > result1);
     }
 
-    // As g increases, fyDaiIn increases (part of Alberto’s original tests in YieldspaceFarming repo)
-    //
-    // TODO: Should revert if over reserves
-
     function testFuzz_fyTokenOutForSharesIn(uint256 passedIn) public {
         uint128 sharesAmount = coerceUInt256To128(
             passedIn,
@@ -242,6 +238,12 @@ contract VariableYieldMathTest is DSTest {
         }
         assertTrue(result > sharesAmount);
     }
+
+
+    // As g increases, fyDaiIn increases (part of Alberto’s original tests in YieldspaceFarming repo)
+    //
+    // TODO: Should revert if over reserves
+
 
     /* 2. function sharesInForFyTokenOut
      *
@@ -281,7 +283,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("expectedResult", expectedResults[idx]);
 
             // When rounding should round in favor of the pool
-            assertSameOrSlightlyLess(result, expectedResults[idx]);
+            assertSameOrSlightlyMore(result, expectedResults[idx]);
         }
     }
 
@@ -304,7 +306,7 @@ contract VariableYieldMathTest is DSTest {
         emit log_named_uint("expectedResult", expectedResult);
 
         // When rounding should round in favor of the pool
-        assertSameOrSlightlyLess(result, expectedResult);
+        assertSameOrSlightlyMore(result, expectedResult);
     }
 
     function testUnit_sharesInForFyTokenOut__mirror() public {
@@ -342,7 +344,91 @@ contract VariableYieldMathTest is DSTest {
                 mu
             );
             emit log_named_uint("resultFyTokens", resultFyTokens);
-            assertSameOrSlightlyLess(resultFyTokens / 10 ** 18, fyTokenAmounts[idx] / 10 ** 18);
+            assertSameOrSlightlyMore(resultFyTokens / 10 ** 18, fyTokenAmounts[idx] / 10 ** 18);
+        }
+    }
+
+    /* 3. function sharesOutForFyTokenIn
+     *
+     ***************************************************************/
+
+    function testUnit_sharesOutForFyTokenIn__baseCases() public {
+        // should match Desmos for selected inputs
+        uint128[1] memory fyTokenAmounts = [
+            // uint128(50000 * 10**18),
+            // uint128(100000 * 10**18),
+            // uint128(200000 * 10**18),
+            uint128(50000 * 10 ** 18)
+        ];
+        uint128[1] memory expectedResults = [
+            // uint128(45581),
+            // uint128(91205),
+            // uint128(182584),
+            uint128(45549)
+        ];
+        uint128 result;
+        for (uint256 idx; idx < fyTokenAmounts.length; idx++) {
+            emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
+            emit log_named_uint("fyTokenReserves", fyTokenReserves);
+            result =
+                VariableYieldMath.sharesOutForFyTokenIn(
+                    sharesReserves,
+                    fyTokenReserves,
+                    fyTokenAmounts[idx], // x or ΔZ
+                    timeTillMaturity,
+                    k,
+                    g2,
+                    c,
+                    mu
+                ) /
+                10**18;
+            emit log_named_uint("result", result);
+            emit log_named_uint("expectedResult", expectedResults[idx]);
+
+            // When rounding should round in favor of the pool
+            assertSameOrSlightlyMore(result, expectedResults[idx]);
+        }
+    }
+
+
+    /* 4. function fyTokenInForSharesOut
+     *
+     ***************************************************************/
+    function testUnit_fyTokenInForSharesOut__baseCases() public {
+        // should match Desmos for selected inputs
+        uint128[1] memory sharesAmounts = [
+            // uint128(50000 * 10**18),
+            // uint128(100000 * 10**18),
+            // uint128(200000 * 10**18),
+            uint128(50000 * 10**18)
+        ];
+        uint128[1] memory expectedResults = [
+            // uint128(45581),
+            // uint128(91205),
+            // uint128(182584),
+            uint128(54887)
+        ];
+        uint128 result;
+        for (uint256 idx; idx < sharesAmounts.length; idx++) {
+            emit log_named_uint("fyTokenAmount", sharesAmounts[idx]);
+            emit log_named_uint("fyTokenReserves", sharesReserves);
+            result =
+                VariableYieldMath.fyTokenInForSharesOut(
+                    sharesReserves,
+                    fyTokenReserves,
+                    sharesAmounts[idx], // x or ΔZ
+                    timeTillMaturity,
+                    k,
+                    g2,
+                    c,
+                    mu
+                ) /
+                10**18;
+            emit log_named_uint("result", result);
+            emit log_named_uint("expectedResult", expectedResults[idx]);
+
+            // When rounding should round in favor of the pool
+            assertSameOrSlightlyMore(result, expectedResults[idx]);
         }
     }
 
