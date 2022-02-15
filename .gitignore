@@ -48,3 +48,6 @@ dist/
 
 # VSCodeCounter
 .VSCodeCounter/
+
+# Dapp
+.DS_Store

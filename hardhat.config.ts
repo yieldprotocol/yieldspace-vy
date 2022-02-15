@@ -128,6 +128,8 @@ module.exports = {
     apiKey: etherscanKey
   },
   paths: {
-      sources: './src/contracts'
+      sources: './src/contracts',
+      cache: 'hh-cache',
+      tests: 'hh-tests'
   }
 }

@@ -27,18 +27,21 @@
     "@truffle/hdwallet-provider": "^1.0.40",
     "@types/mocha": "^8.0.0",
     "chai": "4.2.0",
+    "chai-bignumber": "3.0.0",
     "dss-interfaces": "0.1.1",
     "erc3156": "^0.4.8",
     "ethereum-waffle": "^3.2.2",
-    "ethers": "^5.0.0",
+    "ethereumjs-util": "^7.0.9",
+    "ethers": "^5.0.31",
     "hardhat": "^2.2.0",
     "hardhat-abi-exporter": "^2.0.3",
     "hardhat-contract-sizer": "^2.0.3",
     "hardhat-deploy": "^0.7.0-beta.44",
     "hardhat-gas-reporter": "^1.0.3",
     "hardhat-typechain": "^0.3.4",
+    "mathjs": "^7.3.0",
     "mocha": "^8.3.2",
-    "prettier": "^2.4.1",
+    "prettier": "^2.0.5",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.3",
     "solidity-coverage": "^0.7.14",
@@ -61,6 +64,7 @@
     "@yield-protocol/utils-v2": "^2.5.1",
     "@yield-protocol/vault-interfaces": "^2.3.2",
     "@yield-protocol/vault-v2": "^0.15.0",
-    "@yield-protocol/yieldspace-interfaces": "^2.3.0-rc7"
+    "@yield-protocol/yieldspace-interfaces": "^2.3.0-rc7",
+    "decimal.js": "^10.2.1"
   }
 }
