@@ -5,7 +5,7 @@ import { constants, id } from '@yield-protocol/utils-v2'
 const { DAI, ETH, USDC, THREE_MONTHS, MAX256 } = constants
 const MAX = MAX256
 
-import { VariableYieldMath } from '../../typechain/VariableYieldMath'
+import { YieldMath } from '../../typechain/YieldMath'
 import { Pool } from '../../typechain/Pool'
 import { BaseMock as ERC20 } from '../../typechain/BaseMock'
 import { FYTokenMock as FYToken } from '../../typechain/FYTokenMock'
@@ -40,7 +40,7 @@ export class YieldSpaceEnvironment {
   ) {
     const ownerAdd = await owner.getAddress()
 
-    let yieldMathLibrary: VariableYieldMath
+    let yieldMathLibrary: YieldMath
 
     const WETH9Factory = await ethers.getContractFactory('WETH9Mock')
     const weth9 = (((await WETH9Factory.deploy()) as unknown) as unknown) as ERC20
@@ -57,7 +57,7 @@ export class YieldSpaceEnvironment {
     const BaseFactory = await ethers.getContractFactory('BaseMock')
     const FYTokenFactory = await ethers.getContractFactory('FYTokenMock')
     const YieldMathFactory = await ethers.getContractFactory('YieldMath')
-    yieldMathLibrary = ((await YieldMathFactory.deploy()) as unknown) as VariableYieldMath
+    yieldMathLibrary = ((await YieldMathFactory.deploy()) as unknown) as YieldMath
     await yieldMathLibrary.deployed()
 
     const PoolFactory = await ethers.getContractFactory('Pool', {

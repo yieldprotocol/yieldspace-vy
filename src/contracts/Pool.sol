@@ -14,7 +14,7 @@ import "@yield-protocol/yieldspace-interfaces/IPool.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
-import {VariableYieldMath} from "./VariableYieldMath.sol";
+import {YieldMath} from "./YieldMath.sol";
 
 
 /// @dev The Pool contract exchanges base for fyToken at a price defined by a specific formula.
@@ -30,17 +30,17 @@ contract Pool is IPool, ERC20Permit {
     event Liquidity(uint32 maturity, address indexed from, address indexed to, address indexed fyTokenTo, int256 bases, int256 fyTokens, int256 poolTokens);
     event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
 
-    int128 public immutable mu;             // The normalization coefficient -- which is the initial c value
+    int128 public immutable mu;                      // The normalization coefficient -- which is the initial c value
     int128 public immutable override ts;             // 1 / Seconds in 10 years, in 64.64
     int128 public immutable override g1;             // To be used when selling base to the pool
     int128 public immutable override g2;             // To be used when selling fyToken to the pool
     uint32 public immutable override maturity;
-    uint96 public immutable override scaleFactor;    // Scale up to 18 low decimal tokens to get the right precision in VariableYieldMath
+    uint96 public immutable override scaleFactor;    // Scale up to 18 low decimal tokens to get the right precision in YieldMath
 
     IERC20 public immutable override base;
     IFYToken public immutable override fyToken;
 
-    uint112 private baseCached;       // uses single storage slot, accessible via getCache
+    uint112 private baseCached;              // uses single storage slot, accessible via getCache
     uint112 private fyTokenCached;           // uses single storage slot, accessible via getCache
     uint32  private blockTimestampLast;      // uses single storage slot, accessible via getCache
 
@@ -337,7 +337,7 @@ contract Pool is IPool, ERC20Permit {
         fyTokenOut = (tokensBurned * _realFYTokenCached) / supply;
 
         if (tradeToBase) {
-            tokenOut += VariableYieldMath.sharesOutForFyTokenIn(                      // This is a virtual sell
+            tokenOut += YieldMath.sharesOutForFyTokenIn(                      // This is a virtual sell
                 (_baseCached - tokenOut.u128()) * scaleFactor,              // Cache, minus virtual burn
                 (_fyTokenCached - fyTokenOut.u128()) * scaleFactor,         // Cache, minus virtual burn
                 fyTokenOut.u128() * scaleFactor,                            // Sell the virtual fyToken obtained
@@ -432,7 +432,7 @@ contract Pool is IPool, ERC20Permit {
         beforeMaturity
         returns(uint128)
     {
-        uint128 fyTokenOut = VariableYieldMath.fyTokenOutForSharesIn(
+        uint128 fyTokenOut = YieldMath.fyTokenOutForSharesIn(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
             baseIn * scaleFactor,
@@ -518,7 +518,7 @@ contract Pool is IPool, ERC20Permit {
         beforeMaturity
         returns(uint128)
     {
-        return VariableYieldMath.fyTokenInForSharesOut(
+        return YieldMath.fyTokenInForSharesOut(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
             tokenOut * scaleFactor,
@@ -594,7 +594,7 @@ contract Pool is IPool, ERC20Permit {
         beforeMaturity
         returns(uint128)
     {
-        return VariableYieldMath.sharesOutForFyTokenIn(
+        return YieldMath.sharesOutForFyTokenIn(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
             fyTokenIn * scaleFactor,
@@ -673,7 +673,7 @@ contract Pool is IPool, ERC20Permit {
         beforeMaturity
         returns(uint128)
     {
-        uint128 baseIn = VariableYieldMath.sharesInForFyTokenOut(
+        uint128 baseIn = YieldMath.sharesInForFyTokenOut(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
             fyTokenOut * scaleFactor,

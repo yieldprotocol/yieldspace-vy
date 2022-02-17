@@ -3,13 +3,13 @@ pragma solidity ^0.8.11;
 
 import "ds-test/test.sol";
 
-import {VariableYieldMath} from "./../contracts/VariableYieldMath.sol";
+import {YieldMath} from "./../contracts/YieldMath.sol";
 import {Math64x64} from "./../contracts/Math64x64.sol";
 import {Exp64x64} from "./../contracts/Exp64x64.sol";
 
 import "./helpers.sol";
 
-contract VariableYieldMathTest is DSTest {
+contract YieldMathTest is DSTest {
     using Math64x64 for int128;
     using Math64x64 for uint128;
     using Math64x64 for int256;
@@ -27,7 +27,7 @@ contract VariableYieldMathTest is DSTest {
         testFuzz_          - Property based fuzz tests
         prove_             - Symbolic execution
         NOTE: Symbolic execution tests found in separate file:
-        VariableYieldMathSymbolicExecution.t.sol
+        YieldMathSymbolicExecution.t.sol
 
         <NAME OF TEST> = <prefix>_<name of function being tested>_<name of library>
 
@@ -84,7 +84,7 @@ contract VariableYieldMathTest is DSTest {
     }
 
     /* 1. function fyTokenOutForSharesIn
-     * https://www.desmos.com/calculator/7iebbri94t
+     * https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
      ***************************************************************/
     // NOTE: MATH REVERTS WHEN ALL OF ONE RESOURCE IS DEPLETED
 
@@ -107,7 +107,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("sharesAmount", sharesAmounts[idx]);
             emit log_named_uint("sharesReserves", sharesReserves);
             result =
-                VariableYieldMath.fyTokenOutForSharesIn(
+                YieldMath.fyTokenOutForSharesIn(
                     sharesReserves,
                     fyTokenReserves,
                     sharesAmounts[idx], // x or ΔZ
@@ -139,7 +139,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("sharesAmount", sharesAmounts[idx]);
             emit log_named_uint("sharesReserves", sharesReserves);
             result =
-                VariableYieldMath.fyTokenOutForSharesIn(
+                YieldMath.fyTokenOutForSharesIn(
                     sharesReserves,
                     fyTokenReserves,
                     sharesAmounts[idx], // x or ΔZ
@@ -150,7 +150,7 @@ contract VariableYieldMathTest is DSTest {
                     mu
                 );
             emit log_named_uint("result", result);
-            uint128 resultShares = VariableYieldMath.sharesInForFyTokenOut(
+            uint128 resultShares = YieldMath.sharesInForFyTokenOut(
                 sharesReserves,
                 fyTokenReserves,
                 result,
@@ -169,7 +169,7 @@ contract VariableYieldMathTest is DSTest {
     function testUnit_fyTokenOutForSharesIn__atMaturity() public {
         //should have a price of one at maturity
         uint128 amount = uint128(100000 * 10**18);
-        uint128 result = VariableYieldMath.fyTokenOutForSharesIn(
+        uint128 result = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
             fyTokenReserves,
             amount,
@@ -190,7 +190,7 @@ contract VariableYieldMathTest is DSTest {
         // increase in g results in increase in fyTokenOut
         // NOTE: potential fuzz test
         uint128 amount = uint128(100000 * 10**18);
-        uint128 result1 = VariableYieldMath.fyTokenOutForSharesIn(
+        uint128 result1 = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
             fyTokenReserves,
             amount,
@@ -202,7 +202,7 @@ contract VariableYieldMathTest is DSTest {
         ) / 10**18;
 
         int128 bumpedG = uint256(975).fromUInt().div(gDenominator.fromUInt());
-        uint128 result2 = VariableYieldMath.fyTokenOutForSharesIn(
+        uint128 result2 = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
             fyTokenReserves,
             amount,
@@ -221,7 +221,7 @@ contract VariableYieldMathTest is DSTest {
             1000000000000000000,
             949227786000000000000000
         );
-        uint128 result = VariableYieldMath.fyTokenOutForSharesIn(
+        uint128 result = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
             fyTokenReserves,
             sharesAmount, // x or ΔZ
@@ -268,7 +268,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result =
-                VariableYieldMath.sharesInForFyTokenOut(
+                YieldMath.sharesInForFyTokenOut(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmounts[idx], // x or ΔZ
@@ -291,7 +291,7 @@ contract VariableYieldMathTest is DSTest {
         //should have a price of one at maturity
         uint128 baseAmount = uint128(100000 * 10**18);
         uint128 amount = uint128((baseAmount * cNumerator) / cDenominator);
-        uint128 result = VariableYieldMath.sharesInForFyTokenOut(
+        uint128 result = YieldMath.sharesInForFyTokenOut(
             sharesReserves,
             fyTokenReserves,
             amount,
@@ -322,7 +322,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result =
-                VariableYieldMath.fyTokenOutForSharesIn(
+                YieldMath.fyTokenOutForSharesIn(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmounts[idx], // x or ΔZ
@@ -333,7 +333,7 @@ contract VariableYieldMathTest is DSTest {
                     mu
                 );
             emit log_named_uint("result", result);
-            uint128 resultFyTokens = VariableYieldMath.sharesInForFyTokenOut(
+            uint128 resultFyTokens = YieldMath.sharesInForFyTokenOut(
                 sharesReserves,
                 fyTokenReserves,
                 result,
@@ -371,7 +371,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result =
-                VariableYieldMath.sharesOutForFyTokenIn(
+                YieldMath.sharesOutForFyTokenIn(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmounts[idx], // x or ΔZ
@@ -413,7 +413,7 @@ contract VariableYieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", sharesAmounts[idx]);
             emit log_named_uint("fyTokenReserves", sharesReserves);
             result =
-                VariableYieldMath.fyTokenInForSharesOut(
+                YieldMath.fyTokenInForSharesOut(
                     sharesReserves,
                     fyTokenReserves,
                     sharesAmounts[idx], // x or ΔZ

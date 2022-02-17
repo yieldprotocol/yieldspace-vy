@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "./helpers.sol";
 import "../contracts/Math64x64.sol";
 import "../contracts/Exp64x64.sol";
-import "../contracts/VariableYieldMath.sol";
+import "../contracts/YieldMath.sol";
 
 /// @dev Library wrapper contract to allow for try/catch logic within tests
 contract ForTesting {

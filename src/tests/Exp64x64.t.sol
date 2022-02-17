@@ -3,10 +3,10 @@ pragma solidity ^0.8.11;
 
 import "ds-test/test.sol";
 
-import "./../contracts/VariableYieldMath.sol";
+import "./../contracts/YieldMath.sol";
 import "./helpers.sol";
 
-/// @dev Tests for library: Exp64x64 (located in file VariableYieldMath.sol)
+/// @dev Tests for library: Exp64x64 (located in file YieldMath.sol)
 contract Exp64x64Test is DSTest {
     /**TESTS*********************************************************
 

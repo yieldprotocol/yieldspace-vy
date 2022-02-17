@@ -96,7 +96,7 @@ export const secondsToFrom = (
  * @param { BigNumber | string } base
  * @returns {[BigNumber, BigNumber]}
  *
- * https://www.desmos.com/calculator/mllhtohxfx
+ * https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
  */
 export function mint(
   baseBalance: BigNumber | string,
@@ -123,7 +123,7 @@ export function mint(
  * @param lpTokens { BigNumber | string }
  * @returns {[BigNumber, BigNumber]}
  *
- * https://www.desmos.com/calculator/ubsalzunpo
+ * https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
  */
 export function burn(
   baseBalance: BigNumber | string,
@@ -175,7 +175,7 @@ export function mintWithBase(
   const z1 = new Decimal(buyFYToken(baseBalance, fyTokenBalanceVirtual, fyToken, timeTillMaturity, scaleFactor).toString());
   const Z2 = Z.add(z1)  // Base reserves after the trade
   const YR2 = YR.sub(y) // FYToken reserves after the trade
-  
+
   // Mint specifying how much fyToken to take in. Reverse of `mint`.
   const [m, z2] =  mint(
     Z2.floor().toFixed(),
