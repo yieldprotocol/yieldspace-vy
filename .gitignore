@@ -51,3 +51,6 @@ dist/
 
 # Dapp
 .DS_Store
+
+hh-cache/
+lib/ds-test
