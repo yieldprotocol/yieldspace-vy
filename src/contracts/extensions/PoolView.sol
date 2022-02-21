@@ -12,12 +12,12 @@ import "./YieldMathExtensions.sol";
 //         return pool.invariant();
 //     }
 
-//     function maxFYTokenOut(IPool pool) external view returns (uint128) {
-//         return pool.maxFYTokenOut();
+//     function maxFyTokenOut(IPool pool) external view returns (uint128) {
+//         return pool.maxFyTokenOut();
 //     }
 
-//     function maxFYTokenIn(IPool pool) external view returns (uint128) {
-//         return pool.maxFYTokenIn();
+//     function maxFyTokenIn(IPool pool) external view returns (uint128) {
+//         return pool.maxFyTokenIn();
 //     }
 
 //     function maxBaseIn(IPool pool) external view returns (uint128) {

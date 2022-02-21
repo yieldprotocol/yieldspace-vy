@@ -207,7 +207,7 @@ contract Pool is IPool, ERC20Permit {
     /// @param remainder Wallet receiving any surplus base.
     /// @param fyTokenToBuy Amount of `fyToken` being bought in the Pool, from this we calculate how much base it will be taken in.
     /// @param minRatio Minimum ratio of base to fyToken in the pool.
-    /// @param maxRatio Minimum ratio of base to fyToken in the pool.
+    /// @param maxRatio Maximum ratio of base to fyToken in the pool.
     function _mintInternal(address to, address remainder, uint256 fyTokenToBuy, uint256 minRatio, uint256 maxRatio)
         internal
         returns (uint256 baseIn, uint256 fyTokenIn, uint256 tokensMinted)

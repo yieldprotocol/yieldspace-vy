@@ -112,18 +112,18 @@ describe('YieldMathExtensions - allowances', async function () {
 
   it('computes the pool allowances after fyToken sale', async () => {
     //given
-    const maxFYTokenInBefore = await poolView.maxFYTokenIn(pool.address)
-    const maxFYTokenOutBefore = await poolView.maxFYTokenOut(pool.address)
+    const maxFyTokenInBefore = await poolView.maxFyTokenIn(pool.address)
+    const maxFyTokenOutBefore = await poolView.maxFyTokenOut(pool.address)
     const maxBaseInBefore = await poolView.maxBaseIn(pool.address)
     const maxBaseOutBefore = await poolView.maxBaseOut(pool.address)
     const fyTokenIn = oneUSDC
 
-    expect(maxFYTokenInBefore).to.be.gt(0)
+    expect(maxFyTokenInBefore).to.be.gt(0)
     expect(maxBaseOutBefore).to.be.gt(0)
-    expect(maxFYTokenOutBefore).to.be.eq(0)
+    expect(maxFyTokenOutBefore).to.be.eq(0)
     expect(maxBaseInBefore).to.be.eq(0)
     const baseBefore = await pool.getBaseBalance()
-    expect(await pool.sellFYTokenPreview(maxFYTokenInBefore)).to.be.lt(baseBefore)
+    expect(await pool.sellFYTokenPreview(maxFyTokenInBefore)).to.be.lt(baseBefore)
     expect(maxBaseOutBefore).to.be.lt(baseBefore)
 
     //when
@@ -133,31 +133,31 @@ describe('YieldMathExtensions - allowances', async function () {
       .withArgs(maturity, user1, user2, await base.balanceOf(user2), fyTokenIn.mul(-1))
 
     //then
-    const maxFYTokenIn = await poolView.maxFYTokenIn(pool.address)
-    const maxFYTokenOut = await poolView.maxFYTokenOut(pool.address)
+    const maxFyTokenIn = await poolView.maxFyTokenIn(pool.address)
+    const maxFyTokenOut = await poolView.maxFyTokenOut(pool.address)
     const maxBaseIn = await poolView.maxBaseIn(pool.address)
     const maxBaseOut = await poolView.maxBaseOut(pool.address)
 
-    expect(maxFYTokenInBefore).to.be.gt(maxFYTokenIn)
-    expect(maxFYTokenOutBefore).to.be.lt(maxFYTokenOut)
+    expect(maxFyTokenInBefore).to.be.gt(maxFyTokenIn)
+    expect(maxFyTokenOutBefore).to.be.lt(maxFyTokenOut)
     expect(maxBaseInBefore).to.be.lt(maxBaseIn)
     expect(maxBaseOutBefore).to.be.gt(maxBaseOut)
 
-    expect(await pool.buyFYTokenPreview(maxFYTokenOut)).to.be.gt(0)
+    expect(await pool.buyFYTokenPreview(maxFyTokenOut)).to.be.gt(0)
     expect(await pool.sellBasePreview(maxBaseIn)).to.be.gt(0)
     const baseAfter = await pool.getBaseBalance()
-    expect(await pool.sellFYTokenPreview(maxFYTokenIn)).to.be.lt(baseAfter)
+    expect(await pool.sellFYTokenPreview(maxFyTokenIn)).to.be.lt(baseAfter)
     expect(maxBaseOut).to.be.lt(baseAfter)
 
     // YieldMath is not 100%, so some times is 1 wei off, but on the safe side
-    await expect(pool.buyFYTokenPreview(maxFYTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
+    await expect(pool.buyFYTokenPreview(maxFyTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
     await expect(pool.sellBasePreview(maxBaseIn.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
   })
 
   it('computes the pool allowances after base purchase', async () => {
     //given
-    const maxFYTokenInBefore = await poolView.maxFYTokenIn(pool.address)
-    const maxFYTokenOutBefore = await poolView.maxFYTokenOut(pool.address)
+    const maxFyTokenInBefore = await poolView.maxFyTokenIn(pool.address)
+    const maxFyTokenOutBefore = await poolView.maxFyTokenOut(pool.address)
     const maxBaseInBefore = await poolView.maxBaseIn(pool.address)
     const maxBaseOutBefore = await poolView.maxBaseOut(pool.address)
     const fyTokenCachedBefore = (await pool.getCache())[1]
@@ -170,24 +170,24 @@ describe('YieldMathExtensions - allowances', async function () {
       .withArgs(maturity, user1, user2, baseOut, (await pool.getCache())[1].sub(fyTokenCachedBefore).mul(-1))
 
     //then
-    const maxFYTokenIn = await poolView.maxFYTokenIn(pool.address)
-    const maxFYTokenOut = await poolView.maxFYTokenOut(pool.address)
+    const maxFyTokenIn = await poolView.maxFyTokenIn(pool.address)
+    const maxFyTokenOut = await poolView.maxFyTokenOut(pool.address)
     const maxBaseIn = await poolView.maxBaseIn(pool.address)
     const maxBaseOut = await poolView.maxBaseOut(pool.address)
 
-    expect(maxFYTokenInBefore).to.be.gt(maxFYTokenIn)
-    expect(maxFYTokenOutBefore).to.be.lt(maxFYTokenOut)
+    expect(maxFyTokenInBefore).to.be.gt(maxFyTokenIn)
+    expect(maxFyTokenOutBefore).to.be.lt(maxFyTokenOut)
     expect(maxBaseInBefore).to.be.lt(maxBaseIn)
     expect(maxBaseOutBefore).to.be.gt(maxBaseOut)
 
-    expect(await pool.buyFYTokenPreview(maxFYTokenOut)).to.be.gt(0)
+    expect(await pool.buyFYTokenPreview(maxFyTokenOut)).to.be.gt(0)
     expect(await pool.sellBasePreview(maxBaseIn)).to.be.gt(0)
     const baseAfter = await pool.getBaseBalance()
-    expect(await pool.sellFYTokenPreview(maxFYTokenIn)).to.be.lt(baseAfter)
+    expect(await pool.sellFYTokenPreview(maxFyTokenIn)).to.be.lt(baseAfter)
     expect(maxBaseOut).to.be.lt(baseAfter)
 
     // YieldMath is not 100%, so some times is 1 wei off, but on the safe side
-    await expect(pool.buyFYTokenPreview(maxFYTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
+    await expect(pool.buyFYTokenPreview(maxFyTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
     await expect(pool.sellBasePreview(maxBaseIn.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
   })
 
@@ -200,8 +200,8 @@ describe('YieldMathExtensions - allowances', async function () {
 
     it('computes the pool allowances after base sale', async () => {
       //given
-      const maxFYTokenInBefore = await poolView.maxFYTokenIn(pool.address)
-      const maxFYTokenOutBefore = await poolView.maxFYTokenOut(pool.address)
+      const maxFyTokenInBefore = await poolView.maxFyTokenIn(pool.address)
+      const maxFyTokenOutBefore = await poolView.maxFyTokenOut(pool.address)
       const maxBaseInBefore = await poolView.maxBaseIn(pool.address)
       const maxBaseOutBefore = await poolView.maxBaseOut(pool.address)
       const baseIn = oneUSDC
@@ -213,31 +213,31 @@ describe('YieldMathExtensions - allowances', async function () {
         .withArgs(maturity, user1, user2, baseIn.mul(-1), await fyToken.balanceOf(user2))
 
       //then
-      const maxFYTokenIn = await poolView.maxFYTokenIn(pool.address)
-      const maxFYTokenOut = await poolView.maxFYTokenOut(pool.address)
+      const maxFyTokenIn = await poolView.maxFyTokenIn(pool.address)
+      const maxFyTokenOut = await poolView.maxFyTokenOut(pool.address)
       const maxBaseIn = await poolView.maxBaseIn(pool.address)
       const maxBaseOut = await poolView.maxBaseOut(pool.address)
 
-      expect(maxFYTokenInBefore).to.be.lt(maxFYTokenIn)
-      expect(maxFYTokenOutBefore).to.be.gt(maxFYTokenOut)
+      expect(maxFyTokenInBefore).to.be.lt(maxFyTokenIn)
+      expect(maxFyTokenOutBefore).to.be.gt(maxFyTokenOut)
       expect(maxBaseInBefore).to.be.gt(maxBaseIn)
       expect(maxBaseOutBefore).to.be.lt(maxBaseOut)
 
-      expect(await pool.buyFYTokenPreview(maxFYTokenOut)).to.be.gt(0)
+      expect(await pool.buyFYTokenPreview(maxFyTokenOut)).to.be.gt(0)
       expect(await pool.sellBasePreview(maxBaseIn)).to.be.gt(0)
       const baseAfter = await pool.getBaseBalance()
-      expect(await pool.sellFYTokenPreview(maxFYTokenIn)).to.be.lt(baseAfter)
+      expect(await pool.sellFYTokenPreview(maxFyTokenIn)).to.be.lt(baseAfter)
       expect(maxBaseOut).to.be.lt(baseAfter)
 
       // YieldMath is not 100%, so some times is 1 wei off, but on the safe side
-      await expect(pool.buyFYTokenPreview(maxFYTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
+      await expect(pool.buyFYTokenPreview(maxFyTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
       await expect(pool.sellBasePreview(maxBaseIn.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
     })
 
     it('computes the pool allowances after fyToken purchase', async () => {
       //given
-      const maxFYTokenInBefore = await poolView.maxFYTokenIn(pool.address)
-      const maxFYTokenOutBefore = await poolView.maxFYTokenOut(pool.address)
+      const maxFyTokenInBefore = await poolView.maxFyTokenIn(pool.address)
+      const maxFyTokenOutBefore = await poolView.maxFyTokenOut(pool.address)
       const maxBaseInBefore = await poolView.maxBaseIn(pool.address)
       const maxBaseOutBefore = await poolView.maxBaseOut(pool.address)
       const baseCachedBefore = (await pool.getCache())[0]
@@ -250,24 +250,24 @@ describe('YieldMathExtensions - allowances', async function () {
         .withArgs(maturity, user1, user2, (await pool.getCache())[0].sub(baseCachedBefore).mul(-1), fyTokenOut)
 
       //then
-      const maxFYTokenIn = await poolView.maxFYTokenIn(pool.address)
-      const maxFYTokenOut = await poolView.maxFYTokenOut(pool.address)
+      const maxFyTokenIn = await poolView.maxFyTokenIn(pool.address)
+      const maxFyTokenOut = await poolView.maxFyTokenOut(pool.address)
       const maxBaseIn = await poolView.maxBaseIn(pool.address)
       const maxBaseOut = await poolView.maxBaseOut(pool.address)
 
-      expect(maxFYTokenInBefore).to.be.lt(maxFYTokenIn)
-      expect(maxFYTokenOutBefore).to.be.gt(maxFYTokenOut)
+      expect(maxFyTokenInBefore).to.be.lt(maxFyTokenIn)
+      expect(maxFyTokenOutBefore).to.be.gt(maxFyTokenOut)
       expect(maxBaseInBefore).to.be.gt(maxBaseIn)
       expect(maxBaseOutBefore).to.be.lt(maxBaseOut)
 
-      expect(await pool.buyFYTokenPreview(maxFYTokenOut)).to.be.gt(0)
+      expect(await pool.buyFYTokenPreview(maxFyTokenOut)).to.be.gt(0)
       expect(await pool.sellBasePreview(maxBaseIn)).to.be.gt(0)
       const baseAfter = await pool.getBaseBalance()
-      expect(await pool.sellFYTokenPreview(maxFYTokenIn)).to.be.lt(baseAfter)
+      expect(await pool.sellFYTokenPreview(maxFyTokenIn)).to.be.lt(baseAfter)
       expect(maxBaseOut).to.be.lt(baseAfter)
 
       // YieldMath is not 100%, so some times is 1 wei off, but on the safe side
-      await expect(pool.buyFYTokenPreview(maxFYTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
+      await expect(pool.buyFYTokenPreview(maxFyTokenOut.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
       await expect(pool.sellBasePreview(maxBaseIn.add(2))).to.be.revertedWith('Pool: fyToken balance too low')
     })
   })
