@@ -344,8 +344,8 @@ contract Pool is IPool, ERC20Permit {
                 maturity - uint32(block.timestamp),                         // This can't be called after maturity
                 ts,
                 g2,
-                int128(107 * 10**16),
-                int128(107 * 10**16)
+                int128(107 * 10**16), // shareToken.pricePerShare(),
+                int128(107 * 10**16)  // mu
             ) / scaleFactor;
             fyTokenOut = 0;
         }
