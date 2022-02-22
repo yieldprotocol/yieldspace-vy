@@ -114,6 +114,75 @@ library YieldMath {
     }
 
     /**
+     * Calculate the amount of fyToken a user would get for given amount of shares.
+     * https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
+     * @param sharesReserves yield bearing vault shares reserve amount
+     * @param fyTokenReserves fyToken reserves amount
+     * @param timeTillMaturity time till maturity in seconds e.g. 90 days in seconds
+     * @param k time till maturity coefficient, multiplied by 2^64.  e.g. 25 years in seconds
+     * @param g fee coefficient, multiplied by 2^64 -- sb under 1.0 for selling shares to pool
+     * @param c price of shares in terms of their base, multiplied by 2^64
+     * @param mu (μ) Normalization factor -- starts as c at initialization
+     * @return fyTokenOut the amount of fyToken a user would get for given amount of shares
+     *
+     * dy = y - ((        numerator             ) / (    denominator  ))^(   invA    )
+     * dy = y - (( c/μ^(-t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1)^(1 / (1 - t))
+     *
+     * Note: in the above equation t represents g * k * T
+     * TODO: Add these notes to all equations throughout this file
+     *
+     * In the code below we use a and b:
+     * a = (1 - g*k*T)
+     * b = 1 + 1 - g*k*T == -g*k*T
+     * ^^ a was implemented in all the functions to reduce stack depth
+     *    b is needed in this fn only
+     */
+    function maxFyTokenOut(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (uint128 fyTokenOut) {
+        unchecked {
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+
+            return
+                _maxFyTokenOut(
+                    sharesReserves,
+                    fyTokenReserves,
+                    _computeA(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
+        }
+    }
+
+    function _maxFyTokenOut(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // y
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) internal pure returns (uint128) {
+        // a = 1 - g*k*T
+        // b = -g*k*T == 1 + 1 - g*k*T == a + 1
+        uint256 b = uint256(a +ONE);
+
+        // numerator = (( c/μ^(-t) * z^(1-t) + y^(1-t) )
+        int128 numerator = c.div(mu).pow(b).mul(int128(sharesReserves).pow(a) + int128(fyTokenReserves).pow(a));
+        // confirm shares reserve less than int128 max
+        // confirm fytoken reserve less than int128 max
+
+        // denominator = ( (μ / c )^(-t) + 1)
+        int128 denominator = mu.div(c).pow(b) + int128(ONE);
+
+        return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+   }
+
+    /**
      * Calculate the amount of shares a user would get for certain amount of fyToken.
      * https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
      * @param sharesReserves shares reserves amount
