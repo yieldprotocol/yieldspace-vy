@@ -15,6 +15,7 @@ package/
 
 # Buidler files
 cache
+cache/
 artifacts
 node_modules/
 abi/
@@ -52,5 +53,6 @@ dist/
 # Dapp
 .DS_Store
 
+hh-cache
 hh-cache/
 lib/ds-test

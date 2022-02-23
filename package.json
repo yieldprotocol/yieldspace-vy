@@ -63,7 +63,6 @@
   "dependencies": {
     "@yield-protocol/utils-v2": "^2.5.1",
     "@yield-protocol/vault-interfaces": "^2.3.2",
-    "@yield-protocol/vault-v2": "^0.15.0",
     "@yield-protocol/yieldspace-interfaces": "^2.3.0-rc7",
     "decimal.js": "^10.2.1"
   }

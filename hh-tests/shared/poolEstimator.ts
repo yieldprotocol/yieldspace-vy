@@ -1,5 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers'
 import { IERC20 } from '../../typechain/IERC20'
+import { YvTokenMock as YvToken } from '../../typechain/YvTokenMock'
 import { Pool } from '../../typechain/Pool'
 import { mint, burn, sellBase, sellFYToken, buyBase, buyFYToken, mintWithBase, burnForBase } from './yieldspace'
 import { ethers } from 'hardhat'
@@ -10,17 +11,17 @@ async function currentTimestamp() {
 
 export class PoolEstimator {
   pool: Pool
-  base: IERC20
+  base: YvToken
   fyToken: IERC20
 
-  constructor(pool: Pool, base: IERC20, fyToken: IERC20) {
+  constructor(pool: Pool, base: YvToken, fyToken: IERC20) {
     this.pool = pool
     this.base = base
     this.fyToken = fyToken
   }
 
   public static async setup(pool: Pool): Promise<PoolEstimator> {
-    const base = (await ethers.getContractAt('IERC20', await pool.base())) as IERC20
+    const base = (await ethers.getContractAt('YvTokenMock', await pool.base())) as YvToken
     const fyToken = (await ethers.getContractAt('IERC20', await pool.fyToken())) as IERC20
     return new PoolEstimator(pool, base, fyToken)
   }

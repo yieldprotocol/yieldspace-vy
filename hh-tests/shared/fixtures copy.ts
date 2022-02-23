@@ -16,7 +16,7 @@ import { ts, g1, g2, YVDAI, YVUSDC } from './constants'
 
 export class YieldSpaceEnvironment {
     owner: SignerWithAddress
-    underlyings: Map<string, ERC20>
+    bases: Map<string, ERC20>
     yvBases: Map<string, YvToken>
     fyTokens: Map<string, FYToken>
     pools: Map<string, Map<string, Pool>>
@@ -24,13 +24,11 @@ export class YieldSpaceEnvironment {
     constructor(
         owner: SignerWithAddress,
         yvBases: Map<string, YvToken>,
-        underlyings: Map<string, ERC20>,
         fyTokens: Map<string, FYToken>,
         pools: Map<string, Map<string, Pool>>
     ) {
         this.owner = owner
         this.yvBases = yvBases
-        this.underlyings = underlyings
         this.fyTokens = fyTokens
         this.pools = pools
     }
@@ -47,7 +45,7 @@ export class YieldSpaceEnvironment {
         let yieldMathLibrary: YieldMath
         const initialFYToken = initialBase.div(9)
         const yvBases: Map<string, YvToken> = new Map()
-        const underlyings: Map<string, ERC20> = new Map()
+        const bases: Map<string, ERC20> = new Map()
         const fyTokens: Map<string, FYToken> = new Map()
         const pools: Map<string, Map<string, Pool>> = new Map()
         const now = (await ethers.provider.getBlock('latest')).timestamp
@@ -56,12 +54,10 @@ export class YieldSpaceEnvironment {
         const WETH9Factory = await ethers.getContractFactory('WETH9Mock')
         const weth9 = (((await WETH9Factory.deploy()) as unknown) as unknown) as ERC20
         await weth9.deployed()
-        underlyings.set(ETH, weth9)
 
         const DaiFactory = await ethers.getContractFactory('DaiMock')
         const dai = (((await DaiFactory.deploy('DAI', 'DAI')) as unknown) as unknown) as ERC20
         await dai.deployed()
-        underlyings.set(DAI, dai)
 
         const YvDaiFactory = await ethers.getContractFactory('YvTokenMock')
         const yvDai = (((await YvDaiFactory.deploy('YVDAI', 'YVDAI', 18, dai.address)) as unknown) as unknown) as YvToken
@@ -70,7 +66,6 @@ export class YieldSpaceEnvironment {
         const USDCFactory = await ethers.getContractFactory('USDCMock')
         const usdc = (((await USDCFactory.deploy('USDC', 'USDC')) as unknown) as unknown) as ERC20
         await usdc.deployed()
-        underlyings.set(USDC, usdc)
 
         const YvUsdcFactory = await ethers.getContractFactory('YvTokenMock')
         const yvUsdc = (((await YvUsdcFactory.deploy('YVUSDC', 'YVUSDC', 18, usdc.address)) as unknown) as unknown) as YvToken
@@ -87,7 +82,7 @@ export class YieldSpaceEnvironment {
             },
         })
 
-        // add yvBases
+        // add bases
         const yvBasesMapping = {
             [YVDAI]: yvDai,
             [YVUSDC]: yvUsdc,
@@ -100,8 +95,20 @@ export class YieldSpaceEnvironment {
             yvBases.set(baseId, yvBase)
         }
 
-        for (let baseId of yvBaseIds) {
-            const base = yvBases.get(baseId) as YvToken
+        // add WETH to bases
+        bases.set(ETH, weth9)
+        const baseIds = [ETH]
+
+        // add Dai to bases
+        bases.set(DAI, dai)
+        baseIds.unshift(DAI)
+
+        // add USDC to bases
+        bases.set(USDC, usdc)
+        baseIds.unshift(USDC)
+
+        for (let baseId of baseIds) {
+            const base = bases.get(baseId) as ERC20
             const fyTokenPoolPairs: Map<string, Pool> = new Map()
             pools.set(baseId, fyTokenPoolPairs)
 
@@ -120,7 +127,11 @@ export class YieldSpaceEnvironment {
 
                 // init pool
                 if (initialBase !== BigNumber.from(0)) {
-                    await base.mint(pool.address, initialBase)
+                    if (baseId === ETH) {
+                        break // TODO: Fix when we can give `initialBase` ether to the deployer
+                    } else {
+                        await base.mint(pool.address, initialBase)
+                    }
                     await pool.mint(ownerAdd, ownerAdd, 0, MAX)
 
                     // skew pool to 5% interest rate
@@ -130,6 +141,6 @@ export class YieldSpaceEnvironment {
             }
         }
 
-        return new YieldSpaceEnvironment(owner, yvBases, underlyings, fyTokens, pools)
+        return new YieldSpaceEnvironment(owner, bases, fyTokens, pools)
     }
 }

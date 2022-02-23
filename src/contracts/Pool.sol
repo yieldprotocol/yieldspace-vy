@@ -16,6 +16,7 @@ import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
+import "hardhat/console.sol";  //TODO: DELETEME!!!
 
 /// @dev The Pool contract exchanges base for fyToken at a price defined by a specific formula.
 contract Pool is IPool, ERC20Permit {
@@ -252,6 +253,8 @@ contract Pool is IPool, ERC20Permit {
             fyTokenIn = fyTokenBalance - _realFYTokenCached;
             tokensMinted = (supply * (fyTokenToBuy + fyTokenIn)) / (_realFYTokenCached - fyTokenToBuy);
             baseIn = baseToSell + ((_baseCached + baseToSell) * tokensMinted) / supply;
+            console.log('       baseIn', baseIn);
+            console.log('baseAvailable', baseAvailable);
             require(baseAvailable >= baseIn, "Pool: Not enough base token in");
         }
 
