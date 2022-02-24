@@ -22,7 +22,7 @@ contract YvTokenMock is ERC20 {
     function deposit(uint256 deposited, address to) public returns (uint256 minted) {
         token.transferFrom(msg.sender, address(this), deposited);
         minted = deposited * token.decimals() / price;
-        _mint(msg.sender, minted);
+        _mint(to, minted);
     }
 
     function withdraw(uint256 withdrawn, address to) public returns (uint256 obtained) {

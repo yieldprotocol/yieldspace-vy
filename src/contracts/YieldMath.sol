@@ -148,7 +148,6 @@ library YieldMath {
     ) public pure returns (uint128 fyTokenOut) {
         unchecked {
             require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
-
             return
                 _maxFyTokenOut(
                     sharesReserves,
@@ -169,17 +168,21 @@ library YieldMath {
     ) internal pure returns (uint128) {
         // a = 1 - g*k*T
         // b = -g*k*T == 1 + 1 - g*k*T == a + 1
-        uint256 b = uint256(a +ONE);
+        uint128 b = uint128(int128(a) + int128(ONE));
 
+        //                 termA       termB     termC
         // numerator = (( c/μ^(-t) * z^(1-t) + y^(1-t) )
-        int128 numerator = c.div(mu).pow(b).mul(int128(sharesReserves).pow(a) + int128(fyTokenReserves).pow(a));
+        int128 termA = int128(uint128(c.div(mu)).pow(uint128(b), ONE));
+        int128 termB = int128(sharesReserves.pow(a, ONE));
+        int128 termC = int128(fyTokenReserves.pow(a, ONE));
+        int128 numerator = termA.mul(termB) + termC;
         // confirm shares reserve less than int128 max
         // confirm fytoken reserve less than int128 max
 
         // denominator = ( (μ / c )^(-t) + 1)
         int128 denominator = mu.div(c).pow(b) + int128(ONE);
-
-        return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+        return(uint128(numerator.div(denominator)).pow(ONE, a));
+        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
    }
 
     /**

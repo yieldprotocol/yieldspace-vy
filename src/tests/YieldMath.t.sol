@@ -41,7 +41,7 @@ contract YieldMathTest is DSTest {
     // ForTesting public forTesting;
 
     uint128 public constant sharesReserves = uint128(1100000 * 10**18); // Z
-    uint128 public constant fyTokenReserves = uint128(900000 * 10**18); // Y
+    uint128 public constant fyTokenReserves = uint128(1500000 * 10**18); // Y
     uint128 public constant timeTillMaturity = uint128(90 * 24 * 60 * 60); // T
 
     int128 immutable k;
@@ -429,6 +429,73 @@ contract YieldMathTest is DSTest {
 
             // When rounding should round in favor of the pool
             assertSameOrSlightlyMore(result, expectedResults[idx]);
+        }
+    }
+
+    /* 5. function maxFyTokenOut
+     *
+     ***************************************************************/
+    // function maxFyTokenOut(
+    //     uint128 sharesReserves, // z
+    //     uint128 fyTokenReserves, // x
+    //     uint128 timeTillMaturity,
+    //     int128 k,
+    //     int128 g,
+    //     int128 c,
+    //     int128 mu
+    // ) public pure returns (uint128 fyTokenOut) {
+
+    function testUnit_maxFyTokenOut__baseCases() public {
+        // return 0;
+        uint128[1] memory sharesReservesAmounts = [
+            // uint128(50000 * 10**18),
+            // uint128(100000 * 10**18),
+            // uint128(200000 * 10**18),
+            sharesReserves
+        ];
+        uint128[1] memory fyTokenReservesAmounts = [
+            // uint128(50000 * 10**18),
+            // uint128(100000 * 10**18),
+            // uint128(200000 * 10**18),
+            fyTokenReserves
+        ];
+
+        uint128[1] memory expectedResults = [
+            // uint128(45581),
+            // uint128(91205),
+            // uint128(182584),
+            uint128(145104 * 10**18)
+        ];
+        uint128 result;
+        for (uint256 idx; idx < sharesReservesAmounts.length; idx++) {
+            emit log_named_uint("sharesReserves", sharesReservesAmounts[idx]);
+            emit log_named_uint("fyTokenReserves", fyTokenReservesAmounts[idx]);
+            result =
+                YieldMath.maxFyTokenOut(
+                    sharesReservesAmounts[idx],
+                    fyTokenReservesAmounts[idx],
+                    timeTillMaturity,
+                    k,
+                    g1,
+                    c,
+                    mu
+                );
+            // result =
+            //     YieldMath.maxFyTokenOut(
+            //         sharesReservesAmounts[idx],
+            //         fyTokenReservesAmounts[idx],
+            //         timeTillMaturity,
+            //         k,
+            //         g1,
+            //         c,
+            //         mu
+            //     ) /
+            //     10**18;
+            emit log_named_uint("result", result);
+            emit log_named_uint("expectedResult", expectedResults[idx]);
+            assertEq(result, expectedResults[idx]);
+            // When rounding should round in favor of the pool
+            // assertSameOrSlightlyMore(result, expectedResults[idx]);
         }
     }
 
