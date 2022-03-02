@@ -42,7 +42,7 @@ contract YieldMathTest is DSTest {
 
     uint128 public constant sharesReserves = uint128(1100000 * 10**18); // Z
     uint128 public constant fyTokenReserves = uint128(1500000 * 10**18); // Y
-    uint128 public constant timeTillMaturity = uint128(90 * 24 * 60 * 60); // T
+    uint128 public constant timeTillMaturity = uint128(90 * 24 * 60 * 60 * 10); // T
 
     int128 immutable k;
 
@@ -60,7 +60,7 @@ contract YieldMathTest is DSTest {
     int128 public mu;
 
     constructor() {
-        uint256 invK = 25 * 365 * 24 * 60 * 60;
+        uint256 invK = 25 * 365 * 24 * 60 * 60 * 10;
         k = uint256(1).fromUInt().div(invK.fromUInt());
 
         g1 = gNumerator.fromUInt().div(gDenominator.fromUInt());
@@ -446,25 +446,15 @@ contract YieldMathTest is DSTest {
     // ) public pure returns (uint128 fyTokenOut) {
 
     function testUnit_maxFyTokenOut__baseCases() public {
-        // return 0;
         uint128[1] memory sharesReservesAmounts = [
-            // uint128(50000 * 10**18),
-            // uint128(100000 * 10**18),
-            // uint128(200000 * 10**18),
             sharesReserves
         ];
         uint128[1] memory fyTokenReservesAmounts = [
-            // uint128(50000 * 10**18),
-            // uint128(100000 * 10**18),
-            // uint128(200000 * 10**18),
             fyTokenReserves
         ];
 
         uint128[1] memory expectedResults = [
-            // uint128(45581),
-            // uint128(91205),
-            // uint128(182584),
-            uint128(145104 * 10**18)
+            uint128(145104)
         ];
         uint128 result;
         for (uint256 idx; idx < sharesReservesAmounts.length; idx++) {
@@ -479,23 +469,81 @@ contract YieldMathTest is DSTest {
                     g1,
                     c,
                     mu
-                );
-            // result =
-            //     YieldMath.maxFyTokenOut(
-            //         sharesReservesAmounts[idx],
-            //         fyTokenReservesAmounts[idx],
-            //         timeTillMaturity,
-            //         k,
-            //         g1,
-            //         c,
-            //         mu
-            //     ) /
-            //     10**18;
+                ) / 10**18;
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);
             assertEq(result, expectedResults[idx]);
             // When rounding should round in favor of the pool
             // assertSameOrSlightlyMore(result, expectedResults[idx]);
+        }
+    }
+
+    function testUnit_maxFyTokenOutdebug__baseCases() public {
+        uint128[1] memory sharesReservesAmounts = [
+            sharesReserves
+        ];
+        uint128[1] memory fyTokenReservesAmounts = [
+            fyTokenReserves
+        ];
+
+        uint128[1] memory expectedResults = [
+            uint128(145104)
+        ];
+        uint128 result;
+        for (uint256 idx; idx < sharesReservesAmounts.length; idx++) {
+            emit log_named_uint("sharesReserves", sharesReservesAmounts[idx]);
+            emit log_named_uint("fyTokenReserves", fyTokenReservesAmounts[idx]);
+            (
+                // uint128 sharesReserves_, // z
+                // uint128 fyTokenReserves_, // y
+                // uint128 a_,
+                // uint128 t_
+                // int128 c_,
+                // int128 mu_
+                int128  termA,
+                int128  termB,
+                int128  termC,
+                int128  numerator,
+                int128  mut,
+                int128  oneovermut
+                // int128 denominator
+                // int128 k_,
+                // int128 g_,
+                // uint128 timeTillMaturity_
+            ) =
+                YieldMath.maxFyTokenOutDebug(
+                    sharesReservesAmounts[idx],
+                    fyTokenReservesAmounts[idx],
+                    timeTillMaturity,
+                    k,
+                    g1,
+                    c,
+                    mu
+                );
+                // ) / 10**18;
+
+            // emit log_named_int('k_', k_);
+            // emit log_named_int('g_', g_);
+            // emit log_named_uint('timeTillMaturity_', timeTillMaturity_);
+            // emit log_named_uint('sharesReserves_', sharesReserves_); // z
+            // emit log_named_uint('fyTokenReserves_', fyTokenReserves_); // y
+            // emit log_named_uint('a_', a_);
+            // emit log_named_uint('t_', t_);
+            // emit log_named_int('c_', c_);
+            // emit log_named_int('mu_', mu_);
+            // emit log_named_int('invA', invA);
+            // emit log_named_int('ret', ret);
+            emit log_named_int('oneovermut', oneovermut);
+            emit log_named_int('mut', mut);
+            emit log_named_int('termA', termA);
+            emit log_named_int('termB', termB);
+            emit log_named_int('termC', termC);
+            emit log_named_int('numerator', numerator);
+            // emit log_named_int('denominator', denominator);
+
+            emit log_named_uint("result", result);
+            emit log_named_uint("expectedResult", expectedResults[idx]);
+            assertEq(result, expectedResults[idx]);
         }
     }
 

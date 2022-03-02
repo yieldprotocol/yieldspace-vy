@@ -30,7 +30,7 @@ library YieldMath {
      * @param mu (μ) Normalization factor -- starts as c at initialization
      * @return fyTokenOut the amount of fyToken a user would get for given amount of shares
      *
-     *          (                        sum                           )
+     *          (                        sum                          )
      *            (    Za        )   ( Ya  )   (       Zxa         )   (   invA   )
      * dy = y - ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
      *
@@ -125,17 +125,12 @@ library YieldMath {
      * @param mu (μ) Normalization factor -- starts as c at initialization
      * @return fyTokenOut the amount of fyToken a user would get for given amount of shares
      *
-     * dy = y - ((        numerator             ) / (    denominator  ))^(   invA    )
-     * dy = y - (( c/μ^(-t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1)^(1 / (1 - t))
+     *   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
+     *   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
      *
      * Note: in the above equation t represents g * k * T
      * TODO: Add these notes to all equations throughout this file
      *
-     * In the code below we use a and b:
-     * a = (1 - g*k*T)
-     * b = 1 + 1 - g*k*T == -g*k*T
-     * ^^ a was implemented in all the functions to reduce stack depth
-     *    b is needed in this fn only
      */
     function maxFyTokenOut(
         uint128 sharesReserves, // z
@@ -153,6 +148,7 @@ library YieldMath {
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
+                    _computet(timeTillMaturity, k, g),
                     c,
                     mu
                 );
@@ -163,26 +159,119 @@ library YieldMath {
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // y
         uint128 a,
+        uint128 t,
         int128 c,
         int128 mu
     ) internal pure returns (uint128) {
-        // a = 1 - g*k*T
-        // b = -g*k*T == 1 + 1 - g*k*T == a + 1
-        uint128 b = uint128(int128(a) + int128(ONE));
+        //   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
+        //   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
+        //   dy = y - (( c*(1/μ^t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
 
-        //                 termA       termB     termC
-        // numerator = (( c/μ^(-t) * z^(1-t) + y^(1-t) )
-        int128 termA = int128(uint128(c.div(mu)).pow(uint128(b), ONE));
-        int128 termB = int128(sharesReserves.pow(a, ONE));
-        int128 termC = int128(fyTokenReserves.pow(a, ONE));
+        //                  termA       termB     termC
+        // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
+        // numerator = c * (1/μ^t) * z^(1-t) + y^(1-t)
+
+        int128 termA = c.mul(
+            int128(ONE).div(mu.pow(t))
+        );
+        int128 termB = int128(sharesReserves).pow(a);
+        int128 termC = int128(fyTokenReserves).pow(a);
         int128 numerator = termA.mul(termB) + termC;
-        // confirm shares reserve less than int128 max
-        // confirm fytoken reserve less than int128 max
+        // denominator = (μ / c )^(-t) + 1
+        // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
+        int128 denominator = int128(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+   }
 
-        // denominator = ( (μ / c )^(-t) + 1)
-        int128 denominator = mu.div(c).pow(b) + int128(ONE);
-        return(uint128(numerator.div(denominator)).pow(ONE, a));
-        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+
+    function maxFyTokenOutDebug(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (
+            // uint128 sharesReserves_, // z
+            // uint128 fyTokenReserves_, // y
+            // uint128 a_,
+            // uint128 t_
+            // int128 c_,
+            // int128 mu_,
+            // int128 k_,
+            // int128 g_,
+            // uint128 timeTillMaturity_
+            int128  termA,
+            int128  termB,
+            int128  termC,
+            int128  numerator,
+            int128  mut,
+            int128  oneovermut
+            // int128 denominator
+    ) {
+        unchecked {
+            // k_ = k;
+            // g_ = g;
+            // timeTillMaturity_ = timeTillMaturity;
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+            return
+                _maxFyTokenOutDebug(
+                    sharesReserves,
+                    fyTokenReserves,
+                    _computeA(timeTillMaturity, k, g),
+                    _computet(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
+        }
+    }
+
+    function _maxFyTokenOutDebug(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // y
+        uint128 a,
+        uint128 t,
+        int128 c,
+        int128 mu
+    ) internal pure returns (
+            // uint128 sharesReserves_, // z
+            // uint128 fyTokenReserves_, // y
+            // uint128 a_,
+            // uint128 t_
+            int128  termA,
+            int128  termB,
+            int128  termC,
+            int128  numerator,
+            int128  mut,
+            int128  oneovermut
+            // int128 denominator
+    ) {
+        // sharesReserves_ = sharesReserves;
+        // fyTokenReserves_ = fyTokenReserves;
+        // a_ = a;
+        // t_ = t;
+        // c_ = c;
+        // mu_ = mu;
+
+        //   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
+        //   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
+        //   dy = y - (( c*(1/μ^t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
+
+        //                  termA       termB     termC
+        // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
+        // numerator = c * (1/μ^t) * z^(1-t) + y^(1-t)
+
+        mut = mu.pow(t);
+        // mut = int128(uint128(mu).pow(int128(t).toUInt(), ONE));
+        oneovermut = int128(ONE).div(mut);
+        termA = termA = c.mul(oneovermut);
+        // t_ = t;
+
+        termB = int128(sharesReserves).pow(a);
+        termC = int128(fyTokenReserves).pow(a);
+        numerator = termA.mul(termB) + termC;
+
    }
 
     /**
@@ -581,6 +670,38 @@ library YieldMath {
         require(a <= int128(ONE), "YieldMath: g must be positive");
 
         return uint128(a);
+    }
+
+    function _computet(
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g
+    ) private pure returns (uint128) {
+        // t = k * timeTillMaturity
+        int128 t = k.mul(timeTillMaturity.fromUInt());
+        require(t >= 0, "YieldMath: t must be positive"); // Meaning neither T or k can be negative
+        require(t <= int128(ONE), "YieldMath: t must be less than 1");
+
+        return uint128(g.mul(t));
+    }
+
+    function _computeB(
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g
+    ) private pure returns (int128) {
+        // t = k * timeTillMaturity
+        int128 t = k.mul(timeTillMaturity.fromUInt());
+        require(t >= 0, "YieldMath: t must be positive"); // Meaning neither T or k can be negative
+
+        // a = (1 - gt)
+        int128 a = int128(ONE).sub(g.mul(t));
+        require(a > 0, "YieldMath: Too far from maturity");
+        require(a <= int128(ONE), "YieldMath: g must be positive");
+
+        // b = -gt
+        int128 b = -g.mul(t);
+        return b;
     }
 
     /**

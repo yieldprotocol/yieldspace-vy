@@ -6,11 +6,12 @@ const MAX = MAX128
 
 import { PoolEstimator } from './shared/poolEstimator'
 import { Pool } from '../typechain'
-import { BaseMock as Base } from '../typechain/BaseMock'
+import { YvTokenMock as Base } from '../typechain/YvTokenMock'
 import { FYTokenMock as FYToken } from '../typechain/FYTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 
 import { BigNumber } from 'ethers'
+import { YVUSDC } from './shared/constants'
 
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
@@ -49,7 +50,7 @@ describe('Pool - usdc', async function () {
   let fyToken: FYToken
   let maturity: BigNumber
 
-  const baseId = USDC
+  const baseId = YVUSDC
   const maturityId = '3M'
   const fyTokenId = baseId + '-' + maturityId
 
@@ -69,7 +70,7 @@ describe('Pool - usdc', async function () {
 
   beforeEach(async () => {
     yieldSpace = await loadFixture(fixture)
-    base = yieldSpace.bases.get(baseId) as Base
+    base = yieldSpace.yvBases.get(baseId) as Base
     fyToken = yieldSpace.fyTokens.get(fyTokenId) as FYToken
     pool = (yieldSpace.pools.get(baseId) as Map<string, Pool>).get(fyTokenId) as Pool
     poolEstimator = await PoolEstimator.setup(pool)

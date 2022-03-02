@@ -166,46 +166,40 @@ describe('Pool - mint', async function () {
 
     it('mints liquidity tokens with base only', async () => {
       const fyTokenToBuy = WAD.div(1000)
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 169 ~ it ~ fyTokenToBuy", fyTokenToBuy)
+      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 169 ~ it ~ fyTokenToBuy       ", fyTokenToBuy.toString())
 
       const [expectedMinted, expectedBaseIn] = await poolEstimator.mintWithBase(fyTokenToBuy)
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 172 ~ it ~ expectedBaseIn", expectedBaseIn)
-
-      console.log('excpctdbaseIn', expectedBaseIn.toString())
-
       const poolTokensBefore = await pool.balanceOf(user2)
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 177 ~ it ~ poolTokensBefore", poolTokensBefore)
       const poolSupplyBefore = await pool.totalSupply()
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 179 ~ it ~ poolSupplyBefore", poolSupplyBefore)
       const baseCachedBefore = (await pool.getCache())[0]
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 181 ~ it ~ baseCachedBefore", baseCachedBefore)
       const fyTokenCachedBefore = (await pool.getCache())[1]
-      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 183 ~ it ~ fyTokenCachedBefore", fyTokenCachedBefore)
 
       await base.mint(pool.address, expectedBaseIn)
 
       await expect(pool.mintWithBase(user2, user2, fyTokenToBuy, 0, MAX, OVERRIDES))
         .to.emit(pool, 'Liquidity')
-        // .withArgs(
-        //   maturity,
-        //   user1,
-        //   user2,
-        //   ZERO_ADDRESS,
-        //   (await pool.getCache())[0].sub(baseCachedBefore).mul(-1),
-        //   0,
-        //   (await pool.totalSupply()).sub(poolSupplyBefore)
-        // )
-        // .to.emit(base, 'Transfer')
-        // .withArgs(pool.address, user2, await base.balanceOf(user2)) // Surplus base is given to the receiver of LP tokens
+        .withArgs(
+          maturity,
+          user1,
+          user2,
+          ZERO_ADDRESS,
+          (await pool.getCache())[0].sub(baseCachedBefore).mul(-1),
+          0,
+          (await pool.totalSupply()).sub(poolSupplyBefore)
+        )
+        .to.emit(base, 'Transfer')
+        .withArgs(pool.address, user2, await base.balanceOf(user2)) // Surplus base is given to the receiver of LP tokens
 
-      // const baseIn = (await pool.getCache())[0].sub(baseCachedBefore)
-      // const minted = (await pool.balanceOf(user2)).sub(poolTokensBefore)
+      const baseIn = (await pool.getCache())[0].sub(baseCachedBefore)
+      const minted = (await pool.balanceOf(user2)).sub(poolTokensBefore)
 
-      // almostEqual(minted, expectedMinted, minted.div(10000))
+      almostEqual(minted, expectedMinted, minted.div(10000))
 
-      // almostEqual(baseIn, expectedBaseIn, baseIn.div(10000))
-      // expect((await pool.getCache())[0]).to.equal(baseCachedBefore.add(baseIn))
-      // expect((await pool.getCache())[1]).to.equal(fyTokenCachedBefore.add(minted))
+      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 194 ~ it ~ baseIn", baseIn)
+      console.log("🚀 ~ file: 031_pool_mint.ts ~ line 201 ~ it ~ expectedBaseIn", expectedBaseIn)
+      almostEqual(baseIn, expectedBaseIn, baseIn.div(10000))
+      expect((await pool.getCache())[0]).to.equal(baseCachedBefore.add(baseIn))
+      expect((await pool.getCache())[1]).to.equal(fyTokenCachedBefore.add(minted))
     })
 
     it("doesn't mint if ratio drops", async () => {

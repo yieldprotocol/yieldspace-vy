@@ -16,7 +16,6 @@ import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
-import "hardhat/console.sol"; //TODO: DELETEME!!!
 
 /// @dev The Pool contract exchanges base for fyToken at a price defined by a specific formula.
 contract Pool is IPool, ERC20Permit {
@@ -25,6 +24,9 @@ contract Pool is IPool, ERC20Permit {
     using CastU256I256 for uint256;
     using CastU128U112 for uint128;
     using CastU128I128 for uint128;
+    using Math64x64 for uint256;
+    using Math64x64 for int128;
+
     using MinimalTransferHelper for IERC20;
 
     event Trade(
@@ -153,6 +155,12 @@ contract Pool is IPool, ERC20Permit {
         return _getBaseBalance();
     }
 
+    /// @dev Returns the base current price
+    function getBaseCurrentPrice() public view returns(uint256) {
+        return _getBaseCurrentPrice();
+    }
+
+
     /// @dev Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
     function _getFYTokenBalance() internal view returns (uint112) {
         return (fyToken.balanceOf(address(this)) + _totalSupply).u112();
@@ -161,6 +169,12 @@ contract Pool is IPool, ERC20Permit {
     /// @dev Returns the base balance
     function _getBaseBalance() internal view returns (uint112) {
         return base.balanceOf(address(this)).u112();
+    }
+
+    /// @dev Returns the base current price
+    function _getBaseCurrentPrice() internal view returns(uint256) {
+        //TODO: update with base.pricePerShare()
+        return 1090861847614064956;
     }
 
     /// @dev Retrieve any base tokens not accounted for in the cache
@@ -308,14 +322,17 @@ contract Pool is IPool, ERC20Permit {
 
         // Calculate token amounts
         if (supply == 0) {
+            // console.log('1');
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
         } else if (_realFYTokenCached == 0) {
+            // console.log('2');
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;
             tokensMinted = (supply * baseIn) / _baseCached;
         } else {
+            // console.log('3');
             // There is an optional virtual trade before the mint
             uint256 baseToSell;
             if (fyTokenToBuy > 0) {
@@ -325,18 +342,26 @@ contract Pool is IPool, ERC20Permit {
                     _fyTokenCached
                 );
             }
+            // console.log("file: Pool.sol ~ line 249 ~ fyTokenToBuy", fyTokenToBuy);
+            // console.log("file: Pool.sol ~ line 253 ~ _fyTokenCached", _fyTokenCached);
+            // console.log("file: Pool.sol ~ line 253 ~ _baseCached", _baseCached);
+            // console.log("file: Pool.sol ~ line 252 ~ baseToSell", baseToSell);
+
 
             // We use all the available fyTokens, plus a virtual trade if it happened, surplus is in base tokens
             fyTokenIn = fyTokenBalance - _realFYTokenCached;
             tokensMinted =
                 (supply * (fyTokenToBuy + fyTokenIn)) /
                 (_realFYTokenCached - fyTokenToBuy);
+            // console.log("file: Pool.sol ~ line 338 ~ tokensMinted", tokensMinted);
             baseIn =
                 baseToSell +
                 ((_baseCached + baseToSell) * tokensMinted) /
                 supply;
-            console.log("       baseIn", baseIn);
-            console.log("baseAvailable", baseAvailable);
+            // console.log("file: Pool.sol ~ line 344 ~ baseToSell", baseToSell);
+            // console.log("file: Pool.sol ~ line 344 ~ _baseCached", _baseCached);
+            // console.log("       baseIn", baseIn);
+            // console.log("baseAvailable", baseAvailable);
             require(baseAvailable >= baseIn, "Pool: Not enough base token in");
         }
 
@@ -832,6 +857,8 @@ contract Pool is IPool, ERC20Permit {
         uint128 baseBalance,
         uint128 fyTokenBalance
     ) private view beforeMaturity returns (uint128) {
+        int128 c = uint256(11).fromUInt().div(uint256(10).fromUInt());
+        int128 mu_ = uint256(11).fromUInt().div(uint256(10).fromUInt());
         uint128 baseIn = YieldMath.sharesInForFyTokenOut(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
@@ -839,8 +866,8 @@ contract Pool is IPool, ERC20Permit {
             maturity - uint32(block.timestamp), // This can't be called after maturity
             ts,
             g1,
-            int128(107 * 10**16),
-            int128(107 * 10**16)
+            c,
+            mu_
         ) / scaleFactor;
 
         require(

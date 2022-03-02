@@ -6,12 +6,13 @@ const MAX = MAX128
 
 import { PoolEstimator } from './shared/poolEstimator'
 import { Pool } from '../typechain/Pool'
-import { BaseMock as Base } from '../typechain/BaseMock'
+import { YvTokenMock as Base } from '../typechain/YvTokenMock'
 import { FYTokenMock as FYToken } from '../typechain/FYTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 import { fyDaiForMint } from './shared/yieldspace'
 
 import { BigNumber } from 'ethers'
+import { YVDAI } from './shared/constants'
 
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
@@ -43,7 +44,8 @@ describe('Pool - mintWithBase', async function () {
   let fyToken: FYToken
   let maturity: BigNumber
 
-  const baseId = ethers.utils.hexlify(ethers.utils.randomBytes(6))
+  const baseId = YVDAI
+  // const baseId = ethers.utils.hexlify(ethers.utils.randomBytes(8)) // YVDAI
   const maturityId = '3M'
   const fyTokenId = baseId + '-' + maturityId
 
@@ -93,7 +95,7 @@ describe('Pool - mintWithBase', async function () {
 
   beforeEach(async () => {
     yieldSpace = await loadFixture(fixture)
-    base = yieldSpace.bases.get(baseId) as Base
+    base = yieldSpace.yvBases.get(baseId) as Base
     fyToken = yieldSpace.fyTokens.get(fyTokenId) as FYToken
     pool = ((yieldSpace.pools.get(baseId) as Map<string, Pool>).get(fyTokenId) as Pool).connect(user1Acc)
     poolEstimator = await PoolEstimator.setup(pool)

@@ -92,7 +92,7 @@ export class YieldSpaceEnvironment {
             [YVDAI]: yvDai,
             [YVUSDC]: yvUsdc,
         }
-        for (let baseId of yvBaseIds) {
+        for (let baseId of [YVDAI,YVUSDC]) {
             const yvBase = yvBasesMapping[baseId]
             if (!yvBase) {
                 throw("Base not found")
@@ -100,7 +100,7 @@ export class YieldSpaceEnvironment {
             yvBases.set(baseId, yvBase)
         }
 
-        for (let baseId of yvBaseIds) {
+        for (let baseId of [YVDAI,YVUSDC]) {
             const base = yvBases.get(baseId) as YvToken
             const fyTokenPoolPairs: Map<string, Pool> = new Map()
             pools.set(baseId, fyTokenPoolPairs)

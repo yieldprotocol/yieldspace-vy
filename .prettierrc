@@ -1,12 +1,28 @@
 {
   "semi": false,
   "singleQuote": true,
-  "printWidth": 120,
   "overrides": [
     {
       "files": "*.sol",
       "options": {
+        "explicitTypes": "always",
+        "printWidth": 120,
         "singleQuote": false
+      }
+    }
+  ]
+}
+
+{
+  "singleQuote": true,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "singleQuote": false,
+        "printWidth": 120,
+        "explicitTypes": "always"
       }
     }
   ]

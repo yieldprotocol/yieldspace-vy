@@ -5,7 +5,7 @@ const { WAD, MAX128 } = constants
 const MAX = MAX128
 
 import { Pool } from '../typechain/Pool'
-import { BaseMock as Base } from '../typechain/BaseMock'
+import { YvTokenMock as Base } from '../typechain/YvTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 
 import { BigNumber } from 'ethers'
@@ -13,6 +13,7 @@ import { BigNumber } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
 const { loadFixture } = waffle
+import { YVDAI } from './shared/constants'
 
 async function currentTimestamp() {
   return (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
@@ -44,7 +45,8 @@ describe('Pool - TWAR', async function () {
   let base: Base
   let baseFromUser1: Base
 
-  const baseId = ethers.utils.hexlify(ethers.utils.randomBytes(6))
+  const baseId = YVDAI
+  // const baseId = ethers.utils.hexlify(ethers.utils.randomBytes(6))
   const maturityId = '3M'
   const fyTokenId = baseId + '-' + maturityId
 
@@ -62,7 +64,7 @@ describe('Pool - TWAR', async function () {
 
   beforeEach(async () => {
     yieldSpace = await loadFixture(fixture)
-    base = yieldSpace.bases.get(baseId) as Base
+    base = yieldSpace.yvBases.get(baseId) as Base
     baseFromUser1 = base.connect(user1Acc)
 
     // Deploy a fresh pool so that we can test initialization
