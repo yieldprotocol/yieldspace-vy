@@ -207,8 +207,9 @@ contract Pool is IPool, ERC20Permit {
         uint112 fyTokenCached_
     ) private {
         uint32 blockTimestamp = uint32(block.timestamp);
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        // NOTE: Why does it say "overflow is desired?
+        unchecked {
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast; // underflow is desired
+        }
         uint256 cumulativeBalancesRatio_ = cumulativeBalancesRatio;
         if (timeElapsed > 0 && baseCached_ != 0 && fyTokenCached_ != 0) {
             // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
