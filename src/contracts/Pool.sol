@@ -203,22 +203,25 @@ contract Pool is IPool, ERC20Permit {
     function _update(
         uint128 baseBalance,
         uint128 fyBalance,
-        uint112 _baseCached,
-        uint112 _fyTokenCached
+        uint112 baseCached_,
+        uint112 fyTokenCached_
     ) private {
         uint32 blockTimestamp = uint32(block.timestamp);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0 && _baseCached != 0 && _fyTokenCached != 0) {
+        // NOTE: Why does it say "overflow is desired?
+        uint256 cumulativeBalancesRatio_ = cumulativeBalancesRatio;
+        if (timeElapsed > 0 && baseCached_ != 0 && fyTokenCached_ != 0) {
             // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
-            uint256 scaledFYTokenCached = uint256(_fyTokenCached) * 1e27;
-            cumulativeBalancesRatio +=
+            uint256 scaledFYTokenCached = uint256(fyTokenCached_) * 1e27;
+            cumulativeBalancesRatio_ +=
                 (scaledFYTokenCached * timeElapsed) /
-                _baseCached;
+                baseCached_;
+            cumulativeBalancesRatio = cumulativeBalancesRatio_;
         }
         baseCached = baseBalance.u112();
         fyTokenCached = fyBalance.u112();
         blockTimestampLast = blockTimestamp;
-        emit Sync(baseCached, fyTokenCached, cumulativeBalancesRatio);
+        emit Sync(baseCached, fyTokenCached, cumulativeBalancesRatio_);
     }
 
     // ---- Liquidity ----
@@ -322,17 +325,14 @@ contract Pool is IPool, ERC20Permit {
 
         // Calculate token amounts
         if (supply == 0) {
-            // console.log('1');
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
         } else if (_realFYTokenCached == 0) {
-            // console.log('2');
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;
             tokensMinted = (supply * baseIn) / _baseCached;
         } else {
-            // console.log('3');
             // There is an optional virtual trade before the mint
             uint256 baseToSell;
             if (fyTokenToBuy > 0) {
@@ -342,11 +342,6 @@ contract Pool is IPool, ERC20Permit {
                     _fyTokenCached
                 );
             }
-            // console.log("file: Pool.sol ~ line 249 ~ fyTokenToBuy", fyTokenToBuy);
-            // console.log("file: Pool.sol ~ line 253 ~ _fyTokenCached", _fyTokenCached);
-            // console.log("file: Pool.sol ~ line 253 ~ _baseCached", _baseCached);
-            // console.log("file: Pool.sol ~ line 252 ~ baseToSell", baseToSell);
-
 
             // We use all the available fyTokens, plus a virtual trade if it happened, surplus is in base tokens
             fyTokenIn = fyTokenBalance - _realFYTokenCached;
