@@ -9,10 +9,10 @@ library Exp64x64 {
      * multiply the result by the normalization factor 2^(128 * (1 - y/z)).
      * Revert if z is zero, or if both x and y are zeros.
      *
-     * @param x number to raise into given power y/z
-     * @param y numerator of the power to raise x into
-     * @param z denominator of the power to raise x into
-     * @return x raised into power y/z and then multiplied by 2^(128 * (1 - y/z))
+     * @param x number to raise into given power y/z -- integer
+     * @param y numerator of the power to raise x into  -- 64.64
+     * @param z denominator of the power to raise x into  -- 64.64
+     * @return x raised into power y/z and then multiplied by 2^(128 * (1 - y/z)) -- integer
      */
     function pow( uint128 x, uint128 y, uint128 z) internal pure returns (uint128) {
         require(z != 0);

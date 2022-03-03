@@ -51,11 +51,11 @@ contract Math64x64SymbolicExecution is DSTest {
         // fn(x) < fn(x + 1)
         if (to < to + 1) {
             // skips overflow
-            assertTrue(Math64x64.toInt(to + 1) >= result);
+            require(Math64x64.toInt(to + 1) >= result);
         }
 
         // abs(fn(x)) < abs(x)
-        assertTrue(abs(result) <= abs(to));
+        require(abs(result) <= abs(to));
     }
 
     function prove_from128x128_Math64x64(int256 x) public {

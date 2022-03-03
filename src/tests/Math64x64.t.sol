@@ -120,10 +120,10 @@ contract Math64x64Test is DSTest {
         }
 
         if (!overflows && (from + 1 <= 0x7FFFFFFFFFFFFFFF)) {
-            assertTrue(Math64x64.fromInt(from + 1) > result);
+            require(Math64x64.fromInt(from + 1) > result);
         }
         // abs(fn(x)) < abs(x)
-        assertTrue(abs(result) >= abs(from));
+        require(abs(result) >= abs(from));
     }
 
     /* 2.  function toInt(int128 x) internal pure returns (int64)
@@ -170,11 +170,11 @@ contract Math64x64Test is DSTest {
             overflows = to > to + 1;
         }
         if (!overflows) {
-            assertTrue(Math64x64.toInt(to + 1) >= result);
+            require(Math64x64.toInt(to + 1) >= result);
         }
 
         // abs(fn(x)) < abs(x)
-        assertTrue(abs(result) <= abs(to));
+        require(abs(result) <= abs(to));
     }
 
     /* 3.  function fromUInt(uint256 x) internal pure returns (int128)
@@ -224,10 +224,10 @@ contract Math64x64Test is DSTest {
         }
 
         if (!overflows && (from + 1 <= 0x7FFFFFFFFFFFFFFF)) {
-            assertTrue(Math64x64.fromUInt(from + 1) > result);
+            require(Math64x64.fromUInt(from + 1) > result);
         }
         // fn(x) >= x
-        assertTrue(uint256(uint128(result)) >= from);
+        require(uint256(uint128(result)) >= from);
     }
 
     /* 4.  function toUInt (int128 x) internal pure returns (uint64)
@@ -275,11 +275,11 @@ contract Math64x64Test is DSTest {
             overflows = to > to + 1;
         }
         if (!overflows) {
-            assertTrue(Math64x64.toInt(to + 1) >= result);
+            require(Math64x64.toInt(to + 1) >= result);
         }
 
         // abs(fn(x)) < abs(x)
-        assertTrue(abs(result) <= abs(to));
+        require(abs(result) <= abs(to));
     }
 
     /* 5.  function from128x128 (int256 x) internal pure returns (int128)
@@ -358,7 +358,7 @@ contract Math64x64Test is DSTest {
             overflows = to > to + 1;
         }
         if (!overflows) {
-            assertTrue(Math64x64.to128x128(to + 1) >= result);
+            require(Math64x64.to128x128(to + 1) >= result);
         }
     }
 
@@ -1213,7 +1213,7 @@ contract Math64x64Test is DSTest {
         int128 result = Math64x64.log_2(x);
 
         // property tests:
-        assertTrue(result < x);
+        require(result < x);
 
         int128 ln = Math64x64.ln(x);
         int128 expectedLn = int128(

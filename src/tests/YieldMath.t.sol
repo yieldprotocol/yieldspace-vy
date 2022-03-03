@@ -74,13 +74,13 @@ contract YieldMathTest is DSTest {
         public
     {
         emit log_named_uint("diff", expectedResult - result);
-        assertTrue((expectedResult - result) <= 1);
+        require((expectedResult - result) <= 1);
     }
 
     function assertSameOrSlightlyMore(uint128 result, uint128 expectedResult)
         public
     {
-        assertTrue((result - expectedResult) <= 1);
+        require((result - expectedResult) <= 1);
     }
 
     /* 1. function fyTokenOutForSharesIn
@@ -118,6 +118,26 @@ contract YieldMathTest is DSTest {
                     mu
                 ) /
                 10**18;
+
+            (
+                uint256 normalizedSharesReserves,
+                uint256 ya,
+                uint128 sharesReserves_,
+                uint128 fyTokenReserves_
+            ) = YieldMath.fyTokenOutForSharesInDebug(
+                    sharesReserves,
+                    fyTokenReserves,
+                    sharesAmounts[idx], // x or ΔZ
+                    timeTillMaturity,
+                    k,
+                    g1,
+                    c,
+                    mu
+                );
+            emit log_named_uint("normalizedSharesReserves", normalizedSharesReserves);
+            emit log_named_uint("ya", ya);
+            emit log_named_uint("sharesReserves_", sharesReserves_);
+            emit log_named_uint("fyTokenReserves", fyTokenReserves);
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);
 
@@ -212,7 +232,7 @@ contract YieldMathTest is DSTest {
             c,
             mu
         ) / 10**18;
-        assertTrue(result2 > result1);
+        require(result2 > result1);
     }
 
     function testFuzz_fyTokenOutForSharesIn(uint256 passedIn) public {
@@ -236,7 +256,7 @@ contract YieldMathTest is DSTest {
             emit log_named_uint("sharesAmount", sharesAmount);
             emit log_named_uint("result", result);
         }
-        assertTrue(result > sharesAmount);
+        require(result > sharesAmount);
     }
 
 
@@ -469,7 +489,8 @@ contract YieldMathTest is DSTest {
                     g1,
                     c,
                     mu
-                ) / 10**18;
+                );
+                // ) / 10**18;
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);
             assertEq(result, expectedResults[idx]);
@@ -497,16 +518,15 @@ contract YieldMathTest is DSTest {
                 // uint128 sharesReserves_, // z
                 // uint128 fyTokenReserves_, // y
                 // uint128 a_,
-                // uint128 t_
+                // uint128 t_,
                 // int128 c_,
                 // int128 mu_
                 int128  termA,
-                int128  termB,
-                int128  termC,
-                int128  numerator,
+                uint256  termB,
+                uint256  termC,
+                uint256  numerator,
                 int128  mut,
-                int128  oneovermut
-                // int128 denominator
+                uint256 denominator
                 // int128 k_,
                 // int128 g_,
                 // uint128 timeTillMaturity_
@@ -533,13 +553,12 @@ contract YieldMathTest is DSTest {
             // emit log_named_int('mu_', mu_);
             // emit log_named_int('invA', invA);
             // emit log_named_int('ret', ret);
-            emit log_named_int('oneovermut', oneovermut);
             emit log_named_int('mut', mut);
             emit log_named_int('termA', termA);
-            emit log_named_int('termB', termB);
-            emit log_named_int('termC', termC);
-            emit log_named_int('numerator', numerator);
-            // emit log_named_int('denominator', denominator);
+            emit log_named_uint('termB', termB);
+            emit log_named_uint('termC', termC);
+            emit log_named_uint('numerator', numerator);
+            emit log_named_uint('denominator', denominator);
 
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);

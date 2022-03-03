@@ -112,6 +112,87 @@ library YieldMath {
 
         return uint128(result);
     }
+    function fyTokenOutForSharesInDebug(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 sharesAmount, // dx
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (
+        uint256,
+        uint256,
+        uint128,
+        uint128
+    ) {
+        unchecked {
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+
+            return
+                _fyTokenOutForSharesInDebug(
+                    sharesReserves,
+                    fyTokenReserves,
+                    sharesAmount,
+                    _computeA(timeTillMaturity, k, g),
+                    c,
+                    mu
+                );
+        }
+    }
+
+    function _fyTokenOutForSharesInDebug(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 sharesAmount, // dx
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) internal pure returns (
+        uint256 normalizedSharesReserves,
+        uint256 ya,
+        uint128 sharesReserves_,
+        uint128 fyTokenReserves_
+    ) {
+        sharesReserves_ = sharesReserves;
+        fyTokenReserves_ = fyTokenReserves;
+        // normalizedSharesReserves = μ * sharesReserves
+        normalizedSharesReserves = mu.mulu(sharesReserves);
+        require(
+            normalizedSharesReserves <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // za = c/μ * (normalizedSharesReserves ** a)
+        uint256 za = c.div(mu).mulu(
+            uint128(normalizedSharesReserves).pow(a, ONE)
+        );
+        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+        // ya = fyTokenReserves ** a
+        ya = fyTokenReserves.pow(a, ONE);
+
+        // normalizedSharesAmount = μ * sharesAmount
+        uint256 normalizedSharesAmount = mu.mulu(sharesAmount);
+        require(
+            normalizedSharesAmount <= MAX,
+            "YieldMath: Exchange rate overflow before trade"
+        );
+
+        // zx = normalizedBaseReserves + sharesAmount * μ
+        // uint256 zx = normalizedSharesReserves + normalizedSharesAmount;
+        // require(zx <= MAX, "YieldMath: Too much shares in");
+
+        // // zxa = c/μ * zx ** a
+        // uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
+        // require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
+
+        // // sum = za + ya - zxa
+        // uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+        // require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
+
+    }
 
     /**
      * Calculate the amount of fyToken a user would get for given amount of shares.
@@ -169,18 +250,21 @@ library YieldMath {
 
         //                  termA       termB     termC
         // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
-        // numerator = c * (1/μ^t) * z^(1-t) + y^(1-t)
+        // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
+        int128 mut = mu.pow(int128(t).toUInt()); // ??????
+        // mut = int128(uint128(mu).pow(t, ONE)); // ??????
 
-        int128 termA = c.mul(
-            int128(ONE).div(mu.pow(t))
-        );
-        int128 termB = int128(sharesReserves).pow(a);
-        int128 termC = int128(fyTokenReserves).pow(a);
-        int128 numerator = termA.mul(termB) + termC;
+
+        int128 termA = c.div(mut);  // ??? weird
+        // int128 termA = c.div(mu.pow(int128(t).toUInt()));  // ??? weird
+        uint256 termB = sharesReserves.pow(a, ONE);
+        uint256 termC = fyTokenReserves.pow(a, ONE);
+        return 69;
+        uint256 numerator = termA.mulu(termB) + termC;
         // denominator = (μ / c )^(-t) + 1
         // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
-        int128 denominator = int128(uint128(c.div(mu)).pow(t, ONE) + ONE);
-        return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+        uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
    }
 
 
@@ -196,19 +280,18 @@ library YieldMath {
             // uint128 sharesReserves_, // z
             // uint128 fyTokenReserves_, // y
             // uint128 a_,
-            // uint128 t_
+            // uint128 t_,
             // int128 c_,
             // int128 mu_,
             // int128 k_,
             // int128 g_,
             // uint128 timeTillMaturity_
             int128  termA,
-            int128  termB,
-            int128  termC,
-            int128  numerator,
+            uint256  termB,
+            uint256  termC,
+            uint256  numerator,
             int128  mut,
-            int128  oneovermut
-            // int128 denominator
+            uint256 denominator
     ) {
         unchecked {
             // k_ = k;
@@ -238,14 +321,13 @@ library YieldMath {
             // uint128 sharesReserves_, // z
             // uint128 fyTokenReserves_, // y
             // uint128 a_,
-            // uint128 t_
+            // uint128 t_,
             int128  termA,
-            int128  termB,
-            int128  termC,
-            int128  numerator,
+            uint256  termB,
+            uint256  termC,
+            uint256  numerator,
             int128  mut,
-            int128  oneovermut
-            // int128 denominator
+            uint256 denominator
     ) {
         // sharesReserves_ = sharesReserves;
         // fyTokenReserves_ = fyTokenReserves;
@@ -260,17 +342,22 @@ library YieldMath {
 
         //                  termA       termB     termC
         // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
-        // numerator = c * (1/μ^t) * z^(1-t) + y^(1-t)
+        // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
 
-        mut = mu.pow(t);
-        // mut = int128(uint128(mu).pow(int128(t).toUInt(), ONE));
-        oneovermut = int128(ONE).div(mut);
-        termA = termA = c.mul(oneovermut);
-        // t_ = t;
+        mut = mu.pow(int128(t).toUInt()); // ??????
 
-        termB = int128(sharesReserves).pow(a);
-        termC = int128(fyTokenReserves).pow(a);
-        numerator = termA.mul(termB) + termC;
+        // mut = int128(uint128(mu).pow(t, ONE)); // ??????
+
+        termA = termA = c.div(mut);
+        // // t_ = t;
+
+        termB = sharesReserves.pow(a, ONE);
+        termC = fyTokenReserves.pow(a, ONE);
+        numerator = termA.mulu(termB) + termC;
+        // denominator = (μ / c )^(-t) + 1
+        // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
+        // denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
 
    }
 
