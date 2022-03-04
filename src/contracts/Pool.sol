@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "@yield-protocol/utils-v2/contracts/token/IERC20.sol";
-import "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
-import "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol";
-import "@yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol";
-import "@yield-protocol/utils-v2/contracts/cast/CastU256U128.sol";
-import "@yield-protocol/utils-v2/contracts/cast/CastU256U112.sol";
-import "@yield-protocol/utils-v2/contracts/cast/CastU256I256.sol";
-import "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol";
-import "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
-import "@yield-protocol/yieldspace-interfaces/IPool.sol";
-import "@yield-protocol/vault-interfaces/IFYToken.sol";
+import "yield-protocol/utils-v2/contracts/token/IERC20.sol";
+import "yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
+import "yield-protocol/utils-v2/contracts/token/ERC20Permit.sol";
+import "yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol";
+import "yield-protocol/utils-v2/contracts/cast/CastU256U128.sol";
+import "yield-protocol/utils-v2/contracts/cast/CastU256U112.sol";
+import "yield-protocol/utils-v2/contracts/cast/CastU256I256.sol";
+import "yield-protocol/utils-v2/contracts/cast/CastU128U112.sol";
+import "yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
+import "yield-protocol/yieldspace-interfaces/IPool.sol";
+import "yield-protocol/vault-interfaces/IFYToken.sol";
+import {IYvToken} from "yield-protocol/vault-v2/contracts/oracles/yearn/IYvToken.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
@@ -58,7 +59,7 @@ contract Pool is IPool, ERC20Permit {
     uint32 public immutable override maturity;
     uint96 public immutable override scaleFactor; // Scale up to 18 low decimal tokens to get the right precision in YieldMath
 
-    IERC20 public immutable override base;
+    IYvToken public immutable override base;
     IFYToken public immutable override fyToken;
 
     uint112 private baseCached; // uses single storage slot, accessible via getCache
@@ -174,7 +175,7 @@ contract Pool is IPool, ERC20Permit {
     /// @dev Returns the base current price
     function _getBaseCurrentPrice() internal view returns(uint256) {
         //TODO: update with base.pricePerShare()
-        return 1090861847614064956;
+        return base.pricePerShare();
     }
 
     /// @dev Retrieve any base tokens not accounted for in the cache

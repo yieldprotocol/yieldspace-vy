@@ -1,7 +1,3 @@
-# Dapp tools
-/out
-hevm.libs.*
-
 # Temp & IDE files
 .vscode/
 *~
@@ -16,11 +12,7 @@ package/
 # Buidler files
 cache
 cache/
-artifacts
-node_modules/
-abi/
 output/
-typechain/
 deployments/
 
 # Secret files
@@ -35,11 +27,6 @@ coverage/
 .coverage_contracts/
 coverage.json
 
-# Yarn
-yarn-error.log
-
-# NPM
-package-lock.json
 
 # Crytic
 crytic-export/
@@ -50,10 +37,10 @@ dist/
 # VSCodeCounter
 .VSCodeCounter/
 
-# Dapp
+# DappTools
 .DS_Store
-
-hh-cache
-hh-cache/
+/out
+hevm.libs.*
 lib/ds-test
+
 
