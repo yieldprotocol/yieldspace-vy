@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import "@yield-protocol/utils-v2/contracts/token/IERC20.sol";
+import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
 import "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol";
 import "@yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol";
@@ -10,15 +11,18 @@ import "@yield-protocol/utils-v2/contracts/cast/CastU256U112.sol";
 import "@yield-protocol/utils-v2/contracts/cast/CastU256I256.sol";
 import "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol";
 import "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
-import "@yield-protocol/yieldspace-interfaces/IPool.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
+
+import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";
+import {IYvPool} from "src/contracts/interfaces/IYvPool.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
 
+
 /// @dev The Pool contract exchanges base for fyToken at a price defined by a specific formula.
-contract Pool is IPool, ERC20Permit {
+contract Pool is IYvPool, ERC20Permit {
     using CastU256U128 for uint256;
     using CastU256U112 for uint256;
     using CastU256I256 for uint256;
@@ -27,7 +31,8 @@ contract Pool is IPool, ERC20Permit {
     using Math64x64 for uint256;
     using Math64x64 for int128;
 
-    using MinimalTransferHelper for IERC20;
+    using MinimalTransferHelper for IFYToken;
+    using MinimalTransferHelper for IYVToken;
 
     event Trade(
         uint32 maturity,
@@ -58,7 +63,7 @@ contract Pool is IPool, ERC20Permit {
     uint32 public immutable override maturity;
     uint96 public immutable override scaleFactor; // Scale up to 18 low decimal tokens to get the right precision in YieldMath
 
-    IERC20 public immutable override base;
+    IYVToken public immutable override base;
     IFYToken public immutable override fyToken;
 
     uint112 private baseCached; // uses single storage slot, accessible via getCache
@@ -70,8 +75,8 @@ contract Pool is IPool, ERC20Permit {
     /// @dev Deploy a Pool.
     /// Make sure that the fyToken follows ERC20 standards with regards to name, symbol and decimals
     constructor(
-        IERC20 base_,
-        IFYToken fyToken_,
+        address base_,
+        address fyToken_,
         int128 ts_,
         int128 g1_,
         int128 g2_
@@ -79,23 +84,23 @@ contract Pool is IPool, ERC20Permit {
         ERC20Permit(
             string(
                 abi.encodePacked(
-                    IERC20Metadata(address(fyToken_)).name(),
+                    IERC20Metadata(fyToken_).name(),
                     " LP"
                 )
             ),
             string(
                 abi.encodePacked(
-                    IERC20Metadata(address(fyToken_)).symbol(),
+                    IERC20Metadata(fyToken_).symbol(),
                     "LP"
                 )
             ),
-            IERC20Metadata(address(fyToken_)).decimals()
+            IERC20Metadata(fyToken_).decimals()
         )
     {
-        fyToken = fyToken_;
-        base = base_;
+        fyToken = IFYToken(fyToken_);
+        base = IYVToken(base_);
 
-        uint256 maturity_ = fyToken_.maturity();
+        uint256 maturity_ = IFYToken(fyToken_).maturity();
         require(
             maturity_ <= type(uint32).max,
             "Pool: Maturity too far in the future"
@@ -107,7 +112,7 @@ contract Pool is IPool, ERC20Permit {
         g2 = g2_;
 
         scaleFactor = uint96(10**(18 - uint96(decimals)));
-        mu = int128(107 * 10**16);
+        mu = int128(uint128(base.pricePerShare())); // TOdO: Use safecast
     }
 
     /// @dev Trading can only be done before maturity
@@ -195,7 +200,7 @@ contract Pool is IPool, ERC20Permit {
         returns (uint128 retrieved)
     {
         retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
-        IERC20(address(fyToken)).safeTransfer(to, retrieved);
+        fyToken.safeTransfer(to, retrieved);
         // Now the balances match the cache, so no need to update the TWAR
     }
 
@@ -207,8 +212,9 @@ contract Pool is IPool, ERC20Permit {
         uint112 fyTokenCached_
     ) private {
         uint32 blockTimestamp = uint32(block.timestamp);
+        uint32 timeElapsed;
         unchecked {
-            uint32 timeElapsed = blockTimestamp - blockTimestampLast; // underflow is desired
+            timeElapsed = blockTimestamp - blockTimestampLast; // underflow is desired
         }
         uint256 cumulativeBalancesRatio_ = cumulativeBalancesRatio;
         if (timeElapsed > 0 && baseCached_ != 0 && fyTokenCached_ != 0) {
@@ -481,7 +487,7 @@ contract Pool is IPool, ERC20Permit {
 
         if (tradeToBase) {
             tokenOut +=
-                YieldMath.sharesOutForFyTokenIn( // This is a virtual sell
+                YieldMath.sharesOutForFYTokenIn( // This is a virtual sell
                     (_baseCached - tokenOut.u128()) * scaleFactor, // Cache, minus virtual burn
                     (_fyTokenCached - fyTokenOut.u128()) * scaleFactor, // Cache, minus virtual burn
                     fyTokenOut.u128() * scaleFactor, // Sell the virtual fyToken obtained
@@ -507,7 +513,7 @@ contract Pool is IPool, ERC20Permit {
         _burn(address(this), tokensBurned);
         base.safeTransfer(baseTo, tokenOut);
         if (fyTokenOut > 0)
-            IERC20(address(fyToken)).safeTransfer(fyTokenTo, fyTokenOut);
+            fyToken.safeTransfer(fyTokenTo, fyTokenOut);
 
         emit Liquidity(
             maturity,
@@ -558,7 +564,7 @@ contract Pool is IPool, ERC20Permit {
         );
 
         // Transfer assets
-        IERC20(address(fyToken)).safeTransfer(to, fyTokenOut);
+        fyToken.safeTransfer(to, fyTokenOut);
 
         emit Trade(
             maturity,
@@ -768,7 +774,7 @@ contract Pool is IPool, ERC20Permit {
         uint112 fyTokenBalance
     ) private view beforeMaturity returns (uint128) {
         return
-            YieldMath.sharesOutForFyTokenIn(
+            YieldMath.sharesOutForFYTokenIn(
                 baseBalance * scaleFactor,
                 fyTokenBalance * scaleFactor,
                 fyTokenIn * scaleFactor,
@@ -819,7 +825,7 @@ contract Pool is IPool, ERC20Permit {
         );
 
         // Transfer assets
-        IERC20(address(fyToken)).safeTransfer(to, fyTokenOut);
+        fyToken.safeTransfer(to, fyTokenOut);
 
         emit Trade(
             maturity,
@@ -855,7 +861,7 @@ contract Pool is IPool, ERC20Permit {
     ) private view beforeMaturity returns (uint128) {
         int128 c = uint256(11).fromUInt().div(uint256(10).fromUInt());
         int128 mu_ = uint256(11).fromUInt().div(uint256(10).fromUInt());
-        uint128 baseIn = YieldMath.sharesInForFyTokenOut(
+        uint128 baseIn = YieldMath.sharesInForFYTokenOut(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
             fyTokenOut * scaleFactor,

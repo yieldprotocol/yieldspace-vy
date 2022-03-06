@@ -7,7 +7,7 @@ const MAX = MAX128
 import { PoolEstimator } from './shared/poolEstimator'
 import { Pool } from '../typechain/Pool'
 import { YvTokenMock as Base } from '../typechain/YvTokenMock'
-import { FYTokenMock as FYToken } from '../typechain/FYTokenMock'
+import { FyTokenMock as FYToken } from '../typechain/FyTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 
 import { BigNumber } from 'ethers'

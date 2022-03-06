@@ -5,7 +5,7 @@ import { constants } from '@yield-protocol/utils-v2'
 import { PoolEstimator } from './shared/poolEstimator'
 // import { Pool, PoolView, YieldMath__factory, PoolView__factory } from '../typechain'
 // import { BaseMock as Base } from '../typechain/BaseMock'
-// import { FYTokenMock as FYToken } from '../typechain/FYTokenMock'
+// import { FyTokenMock as FYToken } from '../typechain/FyTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 
 import { BigNumber, utils } from 'ethers'

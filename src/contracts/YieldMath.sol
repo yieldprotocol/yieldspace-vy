@@ -213,7 +213,7 @@ library YieldMath {
      * TODO: Add these notes to all equations throughout this file
      *
      */
-    function maxFyTokenOut(
+    function maxFYTokenOut(
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // x
         uint128 timeTillMaturity,
@@ -225,7 +225,7 @@ library YieldMath {
         unchecked {
             require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
             return
-                _maxFyTokenOut(
+                _maxFYTokenOut(
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
@@ -236,7 +236,7 @@ library YieldMath {
         }
     }
 
-    function _maxFyTokenOut(
+    function _maxFYTokenOut(
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // y
         uint128 a,
@@ -260,15 +260,15 @@ library YieldMath {
         uint256 termB = sharesReserves.pow(a, ONE);
         uint256 termC = fyTokenReserves.pow(a, ONE);
         return 69;
-        uint256 numerator = termA.mulu(termB) + termC;
+        // uint256 numerator = termA.mulu(termB) + termC;
         // denominator = (μ / c )^(-t) + 1
         // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
-        uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
         // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
    }
 
 
-    function maxFyTokenOutDebug(
+    function maxFYTokenOutDebug(
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // x
         uint128 timeTillMaturity,
@@ -299,7 +299,7 @@ library YieldMath {
             // timeTillMaturity_ = timeTillMaturity;
             require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
             return
-                _maxFyTokenOutDebug(
+                _maxFYTokenOutDebug(
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
@@ -310,7 +310,7 @@ library YieldMath {
         }
     }
 
-    function _maxFyTokenOutDebug(
+    function _maxFYTokenOutDebug(
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // y
         uint128 a,
@@ -378,7 +378,7 @@ library YieldMath {
      *                  (       Za           )   ( Ya  )    (    Yxa     )               (   invA   )
      * dz = z - 1/μ  * ( ( (c / μ) * (μz)^(1-t) + y^(1-t) -  (y + x)^(1-t) ) / (c / μ) )^(1 / (1 - t))
      */
-    function sharesOutForFyTokenIn(
+    function sharesOutForFYTokenIn(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
@@ -392,7 +392,7 @@ library YieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             return
-                _sharesOutForFyTokenIn(
+                _sharesOutForFYTokenIn(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmount,
@@ -403,8 +403,8 @@ library YieldMath {
         }
     }
 
-    /// @dev Splitting sharesOutForFyTokenIn in two functions to avoid stack depth limits.
-    function _sharesOutForFyTokenIn(
+    /// @dev Splitting sharesOutForFYTokenIn in two functions to avoid stack depth limits.
+    function _sharesOutForFYTokenIn(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
@@ -530,7 +530,7 @@ library YieldMath {
      * dy = ( c/μ * (μz)^(1-t) + y^(1-t) )^(1 / (1 - t)) - y
      *
      */
-    function maxFyTokenIn(
+    function maxFYTokenIn(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 timeTillMaturity,
@@ -544,7 +544,7 @@ library YieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             return
-                _maxFyTokenIn(
+                _maxFYTokenIn(
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
@@ -554,7 +554,7 @@ library YieldMath {
         }
     }
 
-    function _maxFyTokenIn(
+    function _maxFYTokenIn(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 a,
@@ -667,7 +667,7 @@ library YieldMath {
      * dz = 1/μ * ( ( c/μ * μz^(1-t) + y^(1-t) - (y - x)^(1-t) ) / (c/μ) )^(1 / (1 - t)) - z
      *
      */
-    function sharesInForFyTokenOut(
+    function sharesInForFYTokenOut(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
@@ -681,7 +681,7 @@ library YieldMath {
             require(c > 0, "YieldMath: c must be positive");
 
             return
-                _sharesInForFyTokenOut(
+                _sharesInForFYTokenOut(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmount,
@@ -692,8 +692,8 @@ library YieldMath {
         }
     }
 
-    /// @dev Splitting sharesInForFyTokenOut in two functions to avoid stack depth limits
-    function _sharesInForFyTokenOut(
+    /// @dev Splitting sharesInForFYTokenOut in two functions to avoid stack depth limits
+    function _sharesInForFYTokenOut(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
         uint128 fyTokenAmount,
@@ -859,7 +859,7 @@ library YieldMath {
     //  * @param c price of shares in terms of Dai, multiplied by 2^64
     //  * @return sharesOut the amount of shares a user would get for given amount of fyToken
     //  */
-    // function sharesOutForFyTokenInNormalized(
+    // function sharesOutForFYTokenInNormalized(
     //     uint128 sharesReserves,
     //     uint128 fyTokenReserves,
     //     uint128 fyTokenAmount,
@@ -877,7 +877,7 @@ library YieldMath {
     //         );
 
     //         uint256 result = c0.inv().mulu(
-    //             sharesOutForFyTokenIn(
+    //             sharesOutForFYTokenIn(
     //                 uint128(normalizedSharesReserves),
     //                 fyTokenReserves,
     //                 fyTokenAmount,
@@ -960,7 +960,7 @@ library YieldMath {
     //  * @param c price of shares in terms of Dai, multiplied by 2^64
     //  * @return sharesIn the amount of shares a user would have to pay for given amount of fyToken
     //  */
-    // function sharesInForFyTokenOutNormalized(
+    // function sharesInForFYTokenOutNormalized(
     //     uint128 sharesReserves,
     //     uint128 fyTokenReserves,
     //     uint128 fyTokenAmount,
@@ -978,7 +978,7 @@ library YieldMath {
     //         );
 
     //         uint256 result = c0.inv().mulu(
-    //             sharesInForFyTokenOut(
+    //             sharesInForFYTokenOut(
     //                 uint128(normalizedSharesReserves),
     //                 fyTokenReserves,
     //                 fyTokenAmount,
@@ -1045,7 +1045,7 @@ library YieldMath {
      * @param c price of shares in terms of Dai, multiplied by 2^64
      * @return the amount of shares a user would have to pay for given amount of fyToken
      */
-    // function old__sharesInForFyTokenOut(
+    // function old__sharesInForFYTokenOut(
     //     uint128 sharesReserves,
     //     uint128 fyTokenReserves,
     //     uint128 fyTokenAmount,
@@ -1058,7 +1058,7 @@ library YieldMath {
     //         require(c > 0, "YieldMath: c must be positive");
 
     //         return
-    //             _sharesInForFyTokenOut(
+    //             _sharesInForFYTokenOut(
     //                 sharesReserves,
     //                 fyTokenReserves,
     //                 fyTokenAmount,
@@ -1068,8 +1068,8 @@ library YieldMath {
     //     }
     // }
 
-    // /// @dev Splitting sharesInForFyTokenOut in two functions to avoid stack depth limits.
-    // function old_sharesInForFyTokenOut(
+    // /// @dev Splitting sharesInForFYTokenOut in two functions to avoid stack depth limits.
+    // function old_sharesInForFYTokenOut(
     //     uint128 sharesReserves,
     //     uint128 fyTokenReserves,
     //     uint128 fyTokenAmount,

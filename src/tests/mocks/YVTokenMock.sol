@@ -2,16 +2,17 @@
 pragma solidity 0.8.11;
 
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
+import {IERC20Metadata} from "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 
-// TODO: This is a dropin replacement for @yield-protocol/vault-v2/contracts/mocks/YvTokenMock.sol
-//       because I was having problems with that npm package
+import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";
 
-contract YvTokenMock is ERC20 {
-    ERC20 public token;
+// TODO: This is a dropin replacement for @yield-protocol/vault-v2/contracts/mocks/YVTokenMock.sol
+contract YVTokenMock is ERC20 {
+    IERC20Metadata public token;
     uint256 public price;
 
-    constructor(string memory name, string memory symbol, uint8 decimals, ERC20 token_) ERC20(name, symbol, decimals) {
-        token = token_;
+    constructor(string memory name, string memory symbol, uint8 decimals, address token_) ERC20(name, symbol, decimals) {
+        token = IERC20Metadata(token_);
     }
 
     /// @dev Give tokens to whoever asks for them.
@@ -31,11 +32,7 @@ contract YvTokenMock is ERC20 {
         token.transfer(to, obtained);
     }
 
-    function set(uint256 price_) external {
-        price = price_;
-    }
-
-    function pricePerShare() public view returns (uint256) {
+    function pricePerShare() public view virtual returns (uint256) {
         return price;
     }
 }

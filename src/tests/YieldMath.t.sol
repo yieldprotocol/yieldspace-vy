@@ -79,6 +79,7 @@ contract YieldMathTest is DSTest {
 
     function assertSameOrSlightlyMore(uint128 result, uint128 expectedResult)
         public
+        pure
     {
         require((result - expectedResult) <= 1);
     }
@@ -138,6 +139,7 @@ contract YieldMathTest is DSTest {
             emit log_named_uint("ya", ya);
             emit log_named_uint("sharesReserves_", sharesReserves_);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
+            emit log_named_uint("fyTokenReserves", fyTokenReserves_);
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);
 
@@ -170,7 +172,7 @@ contract YieldMathTest is DSTest {
                     mu
                 );
             emit log_named_uint("result", result);
-            uint128 resultShares = YieldMath.sharesInForFyTokenOut(
+            uint128 resultShares = YieldMath.sharesInForFYTokenOut(
                 sharesReserves,
                 fyTokenReserves,
                 result,
@@ -206,7 +208,7 @@ contract YieldMathTest is DSTest {
         assertSameOrSlightlyLess(result, expectedResult);
     }
 
-    function testUnit_fyTokenOutForSharesIn__increaseG() public {
+    function testUnit_fyTokenOutForSharesIn__increaseG() public view {
         // increase in g results in increase in fyTokenOut
         // NOTE: potential fuzz test
         uint128 amount = uint128(100000 * 10**18);
@@ -265,11 +267,11 @@ contract YieldMathTest is DSTest {
     // TODO: Should revert if over reserves
 
 
-    /* 2. function sharesInForFyTokenOut
+    /* 2. function sharesInForFYTokenOut
      *
      ***************************************************************/
     // NOTE: MATH REVERTS WHEN ALL OF ONE RESOURCE IS DEPLETED
-    function testUnit_sharesInForFyTokenOut__baseCases() public {
+    function testUnit_sharesInForFYTokenOut__baseCases() public {
         // should match Desmos for selected inputs
         uint128[4] memory fyTokenAmounts = [
             uint128(50000 * 10**18),
@@ -288,7 +290,7 @@ contract YieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result =
-                YieldMath.sharesInForFyTokenOut(
+                YieldMath.sharesInForFYTokenOut(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmounts[idx], // x or ΔZ
@@ -307,11 +309,11 @@ contract YieldMathTest is DSTest {
         }
     }
 
-    function testUnit_sharesInForFyTokenOut__atMaturity() public {
+    function testUnit_sharesInForFYTokenOut__atMaturity() public {
         //should have a price of one at maturity
         uint128 baseAmount = uint128(100000 * 10**18);
         uint128 amount = uint128((baseAmount * cNumerator) / cDenominator);
-        uint128 result = YieldMath.sharesInForFyTokenOut(
+        uint128 result = YieldMath.sharesInForFYTokenOut(
             sharesReserves,
             fyTokenReserves,
             amount,
@@ -329,7 +331,7 @@ contract YieldMathTest is DSTest {
         assertSameOrSlightlyMore(result, expectedResult);
     }
 
-    function testUnit_sharesInForFyTokenOut__mirror() public {
+    function testUnit_sharesInForFYTokenOut__mirror() public {
         // should match Desmos for selected inputs
         uint128[4] memory fyTokenAmounts = [
             uint128(50000 * 10**18),
@@ -353,7 +355,7 @@ contract YieldMathTest is DSTest {
                     mu
                 );
             emit log_named_uint("result", result);
-            uint128 resultFyTokens = YieldMath.sharesInForFyTokenOut(
+            uint128 resultFYTokens = YieldMath.sharesInForFYTokenOut(
                 sharesReserves,
                 fyTokenReserves,
                 result,
@@ -363,16 +365,16 @@ contract YieldMathTest is DSTest {
                 c,
                 mu
             );
-            emit log_named_uint("resultFyTokens", resultFyTokens);
-            assertSameOrSlightlyMore(resultFyTokens / 10 ** 18, fyTokenAmounts[idx] / 10 ** 18);
+            emit log_named_uint("resultFYTokens", resultFYTokens);
+            assertSameOrSlightlyMore(resultFYTokens / 10 ** 18, fyTokenAmounts[idx] / 10 ** 18);
         }
     }
 
-    /* 3. function sharesOutForFyTokenIn
+    /* 3. function sharesOutForFYTokenIn
      *
      ***************************************************************/
 
-    function testUnit_sharesOutForFyTokenIn__baseCases() public {
+    function testUnit_sharesOutForFYTokenIn__baseCases() public {
         // should match Desmos for selected inputs
         uint128[1] memory fyTokenAmounts = [
             // uint128(50000 * 10**18),
@@ -391,7 +393,7 @@ contract YieldMathTest is DSTest {
             emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result =
-                YieldMath.sharesOutForFyTokenIn(
+                YieldMath.sharesOutForFYTokenIn(
                     sharesReserves,
                     fyTokenReserves,
                     fyTokenAmounts[idx], // x or ΔZ
@@ -452,10 +454,10 @@ contract YieldMathTest is DSTest {
         }
     }
 
-    /* 5. function maxFyTokenOut
+    /* 5. function maxFYTokenOut
      *
      ***************************************************************/
-    // function maxFyTokenOut(
+    // function maxFYTokenOut(
     //     uint128 sharesReserves, // z
     //     uint128 fyTokenReserves, // x
     //     uint128 timeTillMaturity,
@@ -465,7 +467,7 @@ contract YieldMathTest is DSTest {
     //     int128 mu
     // ) public pure returns (uint128 fyTokenOut) {
 
-    function testUnit_maxFyTokenOut__baseCases() public {
+    function testUnit_maxFYTokenOut__baseCases() public {
         uint128[1] memory sharesReservesAmounts = [
             sharesReserves
         ];
@@ -481,7 +483,7 @@ contract YieldMathTest is DSTest {
             emit log_named_uint("sharesReserves", sharesReservesAmounts[idx]);
             emit log_named_uint("fyTokenReserves", fyTokenReservesAmounts[idx]);
             result =
-                YieldMath.maxFyTokenOut(
+                YieldMath.maxFYTokenOut(
                     sharesReservesAmounts[idx],
                     fyTokenReservesAmounts[idx],
                     timeTillMaturity,
@@ -499,7 +501,7 @@ contract YieldMathTest is DSTest {
         }
     }
 
-    function testUnit_maxFyTokenOutdebug__baseCases() public {
+    function testUnit_maxFYTokenOutdebug__baseCases() public {
         uint128[1] memory sharesReservesAmounts = [
             sharesReserves
         ];
@@ -531,7 +533,7 @@ contract YieldMathTest is DSTest {
                 // int128 g_,
                 // uint128 timeTillMaturity_
             ) =
-                YieldMath.maxFyTokenOutDebug(
+                YieldMath.maxFYTokenOutDebug(
                     sharesReservesAmounts[idx],
                     fyTokenReservesAmounts[idx],
                     timeTillMaturity,

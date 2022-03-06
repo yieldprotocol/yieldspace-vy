@@ -1,20 +1,25 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "./YvTokenMock.sol";
+import "./YVTokenMock.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol";
 
 contract FYTokenMock is ERC20Permit {
-    YvTokenMock public yearnVault;
+    YVTokenMock public yearnVault;
     uint32 public maturity;
 
-    constructor (YvTokenMock yearnVault_, uint32 maturity_)
+    constructor (
+        string memory name_,
+        string memory symbol_,
+        address yearnVault_,
+        uint32 maturity_
+    )
         ERC20Permit(
-            "Test",
-            "TST",
-            IERC20Metadata(address(yearnVault_)).decimals()
+            name_, // should this be generated based on YVToken metadata?
+            symbol_, // should this be generated based on YVToken metadata?
+            IERC20Metadata(yearnVault_).decimals()
     ) {
-        yearnVault = yearnVault_;
+        yearnVault = YVTokenMock(yearnVault_);
         maturity = maturity_;
     }
 

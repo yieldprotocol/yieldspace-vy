@@ -7,7 +7,7 @@ const MAX = MAX256
 import { Pool } from '../typechain/Pool'
 import { YvTokenMock as YvToken } from '../typechain/YvTokenMock'
 import { ERC20Mock as ERC20 } from '../typechain/ERC20Mock'
-import { FYTokenMock as FYToken } from '../typechain/FYTokenMock'
+import { FyTokenMock as FYToken } from '../typechain/FyTokenMock'
 import { YieldSpaceEnvironment } from './shared/fixtures'
 
 import { PoolEstimator } from './shared/poolEstimator'

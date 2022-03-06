@@ -9,7 +9,7 @@ import { YieldMath } from '../../typechain/YieldMath'
 import { Pool } from '../../typechain/Pool'
 import { ERC20Mock as ERC20 } from '../../typechain/ERC20Mock'
 import { YvTokenMock as YvToken } from '../../typechain/YvTokenMock'
-import { FYTokenMock as FYToken } from '../../typechain/FYTokenMock'
+import { FyTokenMock as FYToken } from '../../typechain/FyTokenMock'
 import { ethers } from 'hardhat'
 import { BigNumber } from 'ethers'
 import { ts, g1, g2, YVDAI, YVUSDC } from './constants'
@@ -76,7 +76,7 @@ export class YieldSpaceEnvironment {
         const yvUsdc = (((await YvUsdcFactory.deploy('YVUSDC', 'YVUSDC', 18, usdc.address)) as unknown) as unknown) as YvToken
         await yvUsdc.deployed()
 
-        const FYTokenFactory = await ethers.getContractFactory('FYTokenMock')
+        const FYTokenFactory = await ethers.getContractFactory('FyTokenMock')
         const YieldMathFactory = await ethers.getContractFactory('YieldMath')
         yieldMathLibrary = ((await YieldMathFactory.deploy()) as unknown) as YieldMath
         await yieldMathLibrary.deployed()
