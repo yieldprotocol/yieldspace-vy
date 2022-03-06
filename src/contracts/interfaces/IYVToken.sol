@@ -10,4 +10,7 @@ interface IYVToken is IERC20, IERC20Metadata {
     // @dev total vault assets / total token supply (calculated not cached)
     function pricePerShare() external view returns (uint256);
 
+    function mint(address, uint256) external;
+
+
 }

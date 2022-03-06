@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
 import {IERC20Metadata} from "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 
-import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";
+import {IYVToken} from "../../contracts/interfaces/IYVToken.sol";
 
 // TODO: This is a dropin replacement for @yield-protocol/vault-v2/contracts/mocks/YVTokenMock.sol
 contract YVTokenMock is ERC20 {
