@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import "ds-test/test.sol";
 
@@ -491,8 +491,8 @@ contract YieldMathTest is DSTest {
                     g1,
                     c,
                     mu
-                );
-                // ) / 10**18;
+                ) / 10**18;
+                // );
             emit log_named_uint("result", result);
             emit log_named_uint("expectedResult", expectedResults[idx]);
             assertEq(result, expectedResults[idx]);

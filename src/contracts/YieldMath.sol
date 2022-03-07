@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
@@ -206,10 +206,11 @@ library YieldMath {
      * @param mu (μ) Normalization factor -- starts as c at initialization
      * @return fyTokenOut the amount of fyToken a user would get for given amount of shares
      *
-     *   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
-     *   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
+     *   dy = y - ((        numerator               ) / (    denominator               ))^(   invA  )
+     *   dy = y - (( cμ^(1-t) * z^(1-t) + μ*y^(1-t) ) / (  c*μ^(1-t) * (1/c)^(1-t) + μ ))^( 1/(1-t) )
      *
      * Note: in the above equation t represents g * k * T
+     *       (1-t) is calculated separately in computeA and thereafter referred to as a
      * TODO: Add these notes to all equations throughout this file
      *
      */
@@ -229,7 +230,6 @@ library YieldMath {
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
-                    _computet(timeTillMaturity, k, g),
                     c,
                     mu
                 );
@@ -240,31 +240,28 @@ library YieldMath {
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // y
         uint128 a,
-        uint128 t,
         int128 c,
         int128 mu
     ) internal pure returns (uint128) {
-        //   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
-        //   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
-        //   dy = y - (( c*(1/μ^t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
+        // dy = y - ((        numerator               ) / (    denominator                ))^(   invA  )
+        // dy = y - (( cμ^(1-t) * z^(1-t) + μ*y^(1-t) ) / (  c*μ^(1-t) * (1/c)^(1-t) + μ ))^( 1/(1-t) )
 
-        //                  termA       termB     termC
-        // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
+        //                  termA       termB      termC
+        // numerator =    cμ^(1-t)  * z^(1-t) +  mu * y^(1-t)
         // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
-        int128 mut = mu.pow(int128(t).toUInt()); // ??????
-        // mut = int128(uint128(mu).pow(t, ONE)); // ??????
-
-
-        int128 termA = c.div(mut);  // ??? weird
-        // int128 termA = c.div(mu.pow(int128(t).toUInt()));  // ??? weird
+        int128 termA = c.mul(int128(uint128(mu).pow(a, ONE)));
         uint256 termB = sharesReserves.pow(a, ONE);
         uint256 termC = fyTokenReserves.pow(a, ONE);
-        return 69;
-        // uint256 numerator = termA.mulu(termB) + termC;
-        // denominator = (μ / c )^(-t) + 1
-        // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
+        uint256 numerator = termA.mulu(termB) + termC;
+
+        // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ
+        uint256 denominator = uint256(uint128(
+            c.mul(int128(uint128(mu).pow(a, ONE)))
+            .mul(int128(uint128(int128(ONE).div(c)).pow(a, ONE)))
+             + mu));
         // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
-        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
+
+        return fyTokenReserves - uint128(numerator / (denominator)).pow(ONE, a);
    }
 
 
@@ -303,7 +300,6 @@ library YieldMath {
                     sharesReserves,
                     fyTokenReserves,
                     _computeA(timeTillMaturity, k, g),
-                    _computet(timeTillMaturity, k, g),
                     c,
                     mu
                 );
@@ -314,7 +310,6 @@ library YieldMath {
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // y
         uint128 a,
-        uint128 t,
         int128 c,
         int128 mu
     ) internal pure returns (
@@ -344,16 +339,16 @@ library YieldMath {
         // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
         // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
 
-        mut = mu.pow(int128(t).toUInt()); // ??????
+        // mut = mu.pow(int128(t).toUInt()); // ??????
 
         // mut = int128(uint128(mu).pow(t, ONE)); // ??????
 
-        termA = termA = c.div(mut);
+        // termA = termA = c.div(mut);
         // // t_ = t;
 
-        termB = sharesReserves.pow(a, ONE);
-        termC = fyTokenReserves.pow(a, ONE);
-        numerator = termA.mulu(termB) + termC;
+        // termB = sharesReserves.pow(a, ONE);
+        // termC = fyTokenReserves.pow(a, ONE);
+        // numerator = termA.mulu(termB) + termC;
         // denominator = (μ / c )^(-t) + 1
         // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
         // denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
@@ -759,18 +754,18 @@ library YieldMath {
         return uint128(a);
     }
 
-    function _computet(
-        uint128 timeTillMaturity,
-        int128 k,
-        int128 g
-    ) private pure returns (uint128) {
-        // t = k * timeTillMaturity
-        int128 t = k.mul(timeTillMaturity.fromUInt());
-        require(t >= 0, "YieldMath: t must be positive"); // Meaning neither T or k can be negative
-        require(t <= int128(ONE), "YieldMath: t must be less than 1");
+    // function _computet(
+    //     uint128 timeTillMaturity,
+    //     int128 k,
+    //     int128 g
+    // ) private pure returns (uint128) {
+    //     // t = k * timeTillMaturity
+    //     int128 t = k.mul(timeTillMaturity.fromUInt());
+    //     require(t >= 0, "YieldMath: t must be positive"); // Meaning neither T or k can be negative
+    //     require(t <= int128(ONE), "YieldMath: t must be less than 1");
 
-        return uint128(g.mul(t));
-    }
+    //     return uint128(g.mul(t));
+    // }
 
     function _computeB(
         uint128 timeTillMaturity,
