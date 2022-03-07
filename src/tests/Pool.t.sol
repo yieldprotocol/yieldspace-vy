@@ -16,6 +16,29 @@ import {PoolUser} from "./users/PoolUser.sol";
 uint256 constant THREE_MONTHS = uint256(3) * 30 * 24 * 60 * 60;
 int128 constant ONE = 0x10000000000000000; // In 64.64
 
+import "ds-test/test.sol";
+import "forge-std/stdlib.sol";
+import "forge-std/Vm.sol";
+
+contract TestContract is DSTest, stdError {
+    Vm public constant vm = Vm(HEVM_ADDRESS);
+
+    ErrorsTest test;
+    function setUp() public {
+        test = new ErrorsTest();
+    }
+
+    function testExpectArithmetic() public {
+        vm.expectRevert(stdError.arithmeticError);
+        test.arithmeticError(10);
+    }
+}
+
+contract ErrorsTest {
+    function arithmeticError(uint256 a) public {
+        uint256 a = a - 100;
+    }
+}
 contract PoolTest is DSTest {
     using Math64x64 for int128;
     using Math64x64 for uint128;
