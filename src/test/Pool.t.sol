@@ -46,7 +46,7 @@ contract PoolTest is DSTest {
 
         // setup mock tokens
         yvToken = new YVTokenMock("Yearn Vault Dai", "yvDai", 18, address(0));
-        fyToken = new FYTokenMock("fyToken yvDai maturity 1", "fyYvDai1", address(yvToken), maturity);
+        fyToken = new FYTokenMock("fyToken yvDai maturity 1", "fyYVDai1", address(yvToken), maturity);
         fyToken.name();
         fyToken.symbol();
 

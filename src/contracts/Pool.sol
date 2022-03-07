@@ -14,7 +14,7 @@ import "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 
 import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";
-import {IYvPool} from "src/contracts/interfaces/IYvPool.sol";
+import {IYVPool} from "src/contracts/interfaces/IYVPool.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
@@ -22,7 +22,7 @@ import {YieldMath} from "./YieldMath.sol";
 
 
 /// @dev The Pool contract exchanges base for fyToken at a price defined by a specific formula.
-contract Pool is IYvPool, ERC20Permit {
+contract Pool is IYVPool, ERC20Permit {
     using CastU256U128 for uint256;
     using CastU256U112 for uint256;
     using CastU256I256 for uint256;

@@ -10,12 +10,12 @@ import "src/contracts/interfaces/IYVToken.sol";
 // base() returns IYVToken
 // function mu() external view returns(int128);
 // function getBaseCurrentPrice() external view returns (uint256);
-// Also questioning the name -- IYvPool? Will this replace normal Pool? or will
-// we have both running at same time.  Anyways IYvPool has "yearn vault" a little too
+// Also questioning the name -- IYVPool? Will this replace normal Pool? or will
+// we have both running at same time.  Anyways IYVPool has "yearn vault" a little too
 // baked in.  We also use terms like "shares", "variable yield", and "yield bearing vaults"
 // hmmm after just writing those out, I kinda like "yield bearing" yb.
 // Also FYToken or FyToken -- debate
-interface IYvPool is IERC20, IERC2612 {
+interface IYVPool is IERC20, IERC2612 {
     function getBaseCurrentPrice() external view returns (uint256); // new
     function mu() external view returns(int128); // new
     function base() external view returns(IYVToken); // updated
