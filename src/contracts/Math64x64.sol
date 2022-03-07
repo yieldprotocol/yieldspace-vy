@@ -105,7 +105,7 @@ library Math64x64 {
      */
     function sub(int128 x, int128 y) internal pure returns (int128) {
         int256 result = int256(x) - y;
-        require(result >= MIN_64x64 && result <= MAX_64x64);
+        require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
