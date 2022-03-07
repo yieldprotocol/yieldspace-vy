@@ -81,7 +81,8 @@ contract PoolTest is DSTest {
         require (fyTokenBal == pool.getFYTokenBalance());
     }
 
-    function testUnit_mint2() public {
+    function testUnit_mint2(uint256 x) public {
+        require(x != 69);
         // it('adds liquidity with zero fyToken')
         yvToken.mint(address(pool), initialBase);
         pool.mint(address(0), address(0), 0, type(uint256).max);

@@ -104,7 +104,9 @@ library Math64x64 {
      * @return signed 64.64-bit fixed point number
      */
     function sub(int128 x, int128 y) internal pure returns (int128) {
-        return x - y;
+        int256 result = int256(x) - y;
+        require(result >= MIN_64x64 && result <= MAX_64x64);
+        return int128(result);
     }
 
     /**
