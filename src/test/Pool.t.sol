@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.11;
+pragma solidity >=0.8.11;
 
 import "ds-test/test.sol";
 
@@ -81,8 +81,7 @@ contract PoolTest is DSTest {
         require (fyTokenBal == pool.getFYTokenBalance());
     }
 
-    function testUnit_mint2(uint256 x) public {
-        require(x != 69);
+    function testUnit_mint2() public {
         // it('adds liquidity with zero fyToken')
         yvToken.mint(address(pool), initialBase);
         pool.mint(address(0), address(0), 0, type(uint256).max);

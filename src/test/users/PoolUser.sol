@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.11;
+pragma solidity >=0.8.11;
 
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";

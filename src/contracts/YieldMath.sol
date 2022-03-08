@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.11;
+pragma solidity >=0.8.11;
 
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
@@ -248,10 +248,9 @@ library YieldMath {
 
         //                  termA       termB      termC
         // numerator =    cμ^(1-t)  * z^(1-t) +  mu * y^(1-t)
-        // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
         int128 termA = c.mul(int128(uint128(mu).pow(a, ONE)));
         uint256 termB = sharesReserves.pow(a, ONE);
-        uint256 termC = fyTokenReserves.pow(a, ONE);
+        uint256 termC = mu.mulu(fyTokenReserves.pow(a, ONE));
         uint256 numerator = termA.mulu(termB) + termC;
 
         // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ

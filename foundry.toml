@@ -1,6 +1,7 @@
 [default]
 block_timestamp = 1622400000  # Timestamp for tests (non-zero)\
 contracts = 'src/contracts'
+gas_reports = ["*"]
 libs = ['lib']
 offline = true                # Disable downloading of missing solc version(s)
 optimizer = true              # Enable or disable the solc optimizer
