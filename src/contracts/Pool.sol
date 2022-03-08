@@ -355,15 +355,10 @@ contract Pool is IYVPool, ERC20Permit {
             tokensMinted =
                 (supply * (fyTokenToBuy + fyTokenIn)) /
                 (_realFYTokenCached - fyTokenToBuy);
-            // console.log("file: Pool.sol ~ line 338 ~ tokensMinted", tokensMinted);
             baseIn =
                 baseToSell +
                 ((_baseCached + baseToSell) * tokensMinted) /
                 supply;
-            // console.log("file: Pool.sol ~ line 344 ~ baseToSell", baseToSell);
-            // console.log("file: Pool.sol ~ line 344 ~ _baseCached", _baseCached);
-            // console.log("       baseIn", baseIn);
-            // console.log("baseAvailable", baseAvailable);
             require(baseAvailable >= baseIn, "Pool: Not enough base token in");
         }
 

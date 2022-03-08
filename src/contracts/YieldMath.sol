@@ -4,6 +4,8 @@ pragma solidity >=0.8.11;
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 
+import {console} from "forge-std/console.sol";
+
 /**
  * Ethereum smart contract library implementing Yield Math model with variable yield tokens.
  */
@@ -222,7 +224,8 @@ library YieldMath {
         int128 g,
         int128 c,
         int128 mu
-    ) public pure returns (uint128 fyTokenOut) {
+    ) public view returns (uint128 fyTokenOut) { // TODO: change back to pure
+    // ) public pure returns (uint128 fyTokenOut) {
         unchecked {
             require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
             return
@@ -242,13 +245,16 @@ library YieldMath {
         uint128 a,
         int128 c,
         int128 mu
-    ) internal pure returns (uint128) {
+    ) internal view returns (uint128) { // change back to pure after debugging
+    // ) internal pure returns (uint128) {
         // dy = y - ((        numerator               ) / (    denominator                ))^(   invA  )
         // dy = y - (( cμ^(1-t) * z^(1-t) + μ*y^(1-t) ) / (  c*μ^(1-t) * (1/c)^(1-t) + μ ))^( 1/(1-t) )
 
         //                  termA       termB      termC
         // numerator =    cμ^(1-t)  * z^(1-t) +  mu * y^(1-t)
         int128 termA = c.mul(int128(uint128(mu).pow(a, ONE)));
+        console.log("termA");
+        console.logInt(termA);
         uint256 termB = sharesReserves.pow(a, ONE);
         uint256 termC = mu.mulu(fyTokenReserves.pow(a, ONE));
         uint256 numerator = termA.mulu(termB) + termC;
@@ -261,98 +267,6 @@ library YieldMath {
         // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
 
         return fyTokenReserves - uint128(numerator / (denominator)).pow(ONE, a);
-   }
-
-
-    function maxFYTokenOutDebug(
-        uint128 sharesReserves, // z
-        uint128 fyTokenReserves, // x
-        uint128 timeTillMaturity,
-        int128 k,
-        int128 g,
-        int128 c,
-        int128 mu
-    ) public pure returns (
-            // uint128 sharesReserves_, // z
-            // uint128 fyTokenReserves_, // y
-            // uint128 a_,
-            // uint128 t_,
-            // int128 c_,
-            // int128 mu_,
-            // int128 k_,
-            // int128 g_,
-            // uint128 timeTillMaturity_
-            int128  termA,
-            uint256  termB,
-            uint256  termC,
-            uint256  numerator,
-            int128  mut,
-            uint256 denominator
-    ) {
-        unchecked {
-            // k_ = k;
-            // g_ = g;
-            // timeTillMaturity_ = timeTillMaturity;
-            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
-            return
-                _maxFYTokenOutDebug(
-                    sharesReserves,
-                    fyTokenReserves,
-                    _computeA(timeTillMaturity, k, g),
-                    c,
-                    mu
-                );
-        }
-    }
-
-    function _maxFYTokenOutDebug(
-        uint128 sharesReserves, // z
-        uint128 fyTokenReserves, // y
-        uint128 a,
-        int128 c,
-        int128 mu
-    ) internal pure returns (
-            // uint128 sharesReserves_, // z
-            // uint128 fyTokenReserves_, // y
-            // uint128 a_,
-            // uint128 t_,
-            int128  termA,
-            uint256  termB,
-            uint256  termC,
-            uint256  numerator,
-            int128  mut,
-            uint256 denominator
-    ) {
-        // sharesReserves_ = sharesReserves;
-        // fyTokenReserves_ = fyTokenReserves;
-        // a_ = a;
-        // t_ = t;
-        // c_ = c;
-        // mu_ = mu;
-
-        //   dy = y - ((        numerator              ) / (    denominator   ))^(   invA    )
-        //   dy = y - (( cμ^(-t)   * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
-        //   dy = y - (( c*(1/μ^t) * z^(1-t) + y^(1-t) ) / ( (μ / c )^(-t) + 1))^(1 / (1 - t))
-
-        //                  termA       termB     termC
-        // numerator =    cμ^(-t)  * z^(1-t) + y^(1-t)
-        // numerator =     c/(μ^t) * z^(1-t) + y^(1-t)
-
-        // mut = mu.pow(int128(t).toUInt()); // ??????
-
-        // mut = int128(uint128(mu).pow(t, ONE)); // ??????
-
-        // termA = termA = c.div(mut);
-        // // t_ = t;
-
-        // termB = sharesReserves.pow(a, ONE);
-        // termC = fyTokenReserves.pow(a, ONE);
-        // numerator = termA.mulu(termB) + termC;
-        // denominator = (μ / c )^(-t) + 1
-        // denominator =    (c / μ)^t  + 1   IS THIS RIGHT?
-        // denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
-        // return fyTokenReserves - uint128(numerator.div(denominator)).pow(ONE, a);
-
    }
 
     /**
