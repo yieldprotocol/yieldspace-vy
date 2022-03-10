@@ -35,4 +35,8 @@ contract YVTokenMock is ERC20 {
     function pricePerShare() public view virtual returns (uint256) {
         return price;
     }
+
+    function setPrice(uint256 price_) public {
+        price = price_;
+    }
 }
