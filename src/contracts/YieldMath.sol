@@ -245,15 +245,14 @@ library YieldMath {
         uint256 termC = mu.mulu(fyTokenReserves.pow(a, ONE));
         uint256 numerator = termA.mulu(termB) + termC;
 
-        // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ
-        uint256 denominator = uint256(uint128(
-            c.mul(int128(uint128(mu).pow(a, ONE)))
-            .mul(int128(uint128(int128(ONE).div(c)).pow(a, ONE)))
-             + mu));
-        // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        // // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ
+        uint256 denominator = uint256(uint128(termA.mul(int128(uint128(int128(ONE).div(c)).pow(a, ONE))) + mu));
+        // // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
 
-        return fyTokenReserves - uint128(numerator / (denominator)).pow(ONE, a);
-   }
+        int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
+        // int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
+        // return result64.toUInt();
+    }
 
     /**
      * Calculate the amount of shares a user would get for certain amount of fyToken.

@@ -256,31 +256,32 @@ describe('Pool - mint', async function () {
       expect(await fyToken.balanceOf(user3)).to.equal(fyTokenOut)
     })
 
-    it('burns liquidity tokens to Base', async () => {
-      const baseBalance = await base.balanceOf(pool.address)
-      const lpTokensIn = WAD.mul(2)
+    // TODO: move to 034
+    // it('burns liquidity tokens to Base', async () => {
+    //   const baseBalance = await base.balanceOf(pool.address)
+    //   const lpTokensIn = WAD.mul(2)
 
-      const expectedBaseOut = await poolEstimator.burnForBase(lpTokensIn)
+    //   const expectedBaseOut = await poolEstimator.burnForBase(lpTokensIn)
 
-      await pool.transfer(pool.address, lpTokensIn)
-      await expect(pool.burnForBase(user2, 0, MAX, OVERRIDES))
-        .to.emit(pool, 'Liquidity')
-        .withArgs(
-          maturity,
-          user1,
-          user2,
-          ZERO_ADDRESS,
-          baseBalance.sub(await base.balanceOf(pool.address)),
-          0,
-          lpTokensIn.mul(-1)
-        )
+    //   await pool.transfer(pool.address, lpTokensIn)
+    //   await expect(pool.burnForBase(user2, 0, MAX, OVERRIDES))
+    //     .to.emit(pool, 'Liquidity')
+    //     .withArgs(
+    //       maturity,
+    //       user1,
+    //       user2,
+    //       ZERO_ADDRESS,
+    //       baseBalance.sub(await base.balanceOf(pool.address)),
+    //       0,
+    //       lpTokensIn.mul(-1)
+    //     )
 
-      const baseOut = baseBalance.sub(await base.balanceOf(pool.address))
+    //   const baseOut = baseBalance.sub(await base.balanceOf(pool.address))
 
-      almostEqual(baseOut, expectedBaseOut, baseOut.div(10000))
-      expect((await pool.getCache())[0]).to.equal(await pool.getBaseBalance())
-      expect((await pool.getCache())[1]).to.equal(await pool.getFYTokenBalance())
-    })
+    //   almostEqual(baseOut, expectedBaseOut, baseOut.div(10000))
+    //   expect((await pool.getCache())[0]).to.equal(await pool.getBaseBalance())
+    //   expect((await pool.getCache())[1]).to.equal(await pool.getFYTokenBalance())
+    // })
 
     it("doesn't burn if ratio drops", async () => {
       const lpTokensIn = WAD.mul(2)
