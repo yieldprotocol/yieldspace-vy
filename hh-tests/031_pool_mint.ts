@@ -283,22 +283,24 @@ describe('Pool - mint', async function () {
     //   expect((await pool.getCache())[1]).to.equal(await pool.getFYTokenBalance())
     // })
 
-    it("doesn't burn if ratio drops", async () => {
-      const lpTokensIn = WAD.mul(2)
-      await pool.transfer(pool.address, lpTokensIn)
-      const minRatio = WAD.mul(await base.balanceOf(pool.address)).div(await fyToken.balanceOf(pool.address))
-      await fyToken.mint(pool.address, WAD)
-      await pool.sync()
-      await expect(pool.burnForBase(user2, minRatio, MAX, OVERRIDES)).to.be.revertedWith('Pool: Reserves ratio changed')
-    })
+    // TODO: move to 034
+    // it("doesn't burn if ratio drops", async () => {
+    //   const lpTokensIn = WAD.mul(2)
+    //   await pool.transfer(pool.address, lpTokensIn)
+    //   const minRatio = WAD.mul(await base.balanceOf(pool.address)).div(await fyToken.balanceOf(pool.address))
+    //   await fyToken.mint(pool.address, WAD)
+    //   await pool.sync()
+    //   await expect(pool.burnForBase(user2, minRatio, MAX, OVERRIDES)).to.be.revertedWith('Pool: Reserves ratio changed')
+    // })
 
-    it("doesn't burn if ratio rises", async () => {
-      const lpTokensIn = WAD.mul(2)
-      await pool.transfer(pool.address, lpTokensIn)
-      const maxRatio = WAD.mul(await base.balanceOf(pool.address)).div(await fyToken.balanceOf(pool.address))
-      await base.mint(pool.address, WAD)
-      await pool.sync()
-      await expect(pool.burnForBase(user2, 0, maxRatio, OVERRIDES)).to.be.revertedWith('Pool: Reserves ratio changed')
-    })
+    // // TODO: move to 034
+    // it("doesn't burn if ratio rises", async () => {
+    //   const lpTokensIn = WAD.mul(2)
+    //   await pool.transfer(pool.address, lpTokensIn)
+    //   const maxRatio = WAD.mul(await base.balanceOf(pool.address)).div(await fyToken.balanceOf(pool.address))
+    //   await base.mint(pool.address, WAD)
+    //   await pool.sync()
+    //   await expect(pool.burnForBase(user2, 0, maxRatio, OVERRIDES)).to.be.revertedWith('Pool: Reserves ratio changed')
+    // })
   })
 })
