@@ -4,7 +4,9 @@ pragma solidity >=0.8.11;
 import "./YVTokenMock.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol";
 
-contract FYTokenMock is ERC20Permit {
+
+
+contract FYTokenMock is ERC20Permit, Mintable {
     YVTokenMock public yearnVault;
     uint32 public maturity;
 
@@ -21,10 +23,6 @@ contract FYTokenMock is ERC20Permit {
     ) {
         yearnVault = YVTokenMock(yearnVault_);
         maturity = maturity_;
-    }
-
-    function mint(address to, uint256 amount) public {
-        _mint(to, amount);
     }
 
     function burn(address from, uint256 amount) public {

@@ -7,7 +7,14 @@ import {IERC20Metadata} from "@yield-protocol/utils-v2/contracts/token/IERC20Met
 import {IYVToken} from "../../contracts/interfaces/IYVToken.sol";
 
 // TODO: This is a dropin replacement for @yield-protocol/vault-v2/contracts/mocks/YVTokenMock.sol
-contract YVTokenMock is ERC20 {
+
+abstract contract Mintable is ERC20 {
+    /// @dev Give tokens to whoever asks for them.
+    function mint(address to, uint256 amount) public virtual {
+        _mint(to, amount);
+    }
+}
+contract YVTokenMock is Mintable {
     IERC20Metadata public token;
     uint256 public price;
 
@@ -15,10 +22,6 @@ contract YVTokenMock is ERC20 {
         token = IERC20Metadata(token_);
     }
 
-    /// @dev Give tokens to whoever asks for them.
-    function mint(address to, uint256 amount) public virtual {
-        _mint(to, amount);
-    }
 
     function deposit(uint256 deposited, address to) public returns (uint256 minted) {
         token.transferFrom(msg.sender, address(this), deposited);
