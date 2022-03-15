@@ -1,108 +1,49 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.8.11;
 
-import {console} from "forge-std/console.sol";
 import "forge-std/stdlib.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {console} from "forge-std/console.sol";
 
-import {YieldMath} from "../contracts/YieldMath.sol";
-import {Math64x64} from "../contracts/Math64x64.sol";
+import "./shared/Utils.sol";
+import "./shared/Constants.sol";
+import {Pool} from "../contracts/Pool.sol";
+import {TestCore} from "./shared/TestCore.sol";
+import {ERC20User} from "./users/ERC20User.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
-import {Pool} from "src/contracts/Pool.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
-import {ERC20User} from "./users/ERC20User.sol";
+import {Math64x64} from "../contracts/Math64x64.sol";
+import {YieldMath} from "../contracts/YieldMath.sol";
 
-// constants
-uint256 constant WAD = 1e18;
-uint256 constant MAX = type(uint256).max;
-uint256 constant THREE_MONTHS = uint256(3) * 30 * 24 * 60 * 60;
-
-uint256 constant INITIAL_BASE = 1_100_000 * 1e18;
-uint256 constant INITIAL_FY_TOKENS = 1_500_000 * 1e18;
-
-string constant BASE_SYMBOL = "yvDai";
-string constant FY_SYMBOL = "fyYVDai1";
-
-// 64.64
-int128 constant ONE = 0x10000000000000000;
-int128 constant G1 = (int128(95) * 1e18) / 100;
-int128 constant G2 = (int128(100) * 1e18) / 95;
-
-// contract base
-abstract contract MintBurnTestCore is stdCheats {
-    event Liquidity(
-        uint32 maturity,
-        address indexed from,
-        address indexed to,
-        address indexed fyTokenTo,
-        int256 bases,
-        int256 fyTokens,
-        int256 poolTokens
-    );
-
-    event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
-
+abstract contract ZeroState is TestCore {
     using Math64x64 for int128;
     using Math64x64 for uint128;
     using Math64x64 for int256;
     using Math64x64 for uint256;
     using Exp64x64 for uint128;
 
-    Vm public vm = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
+    uint256 public constant aliceYVInitialBalance = 1000 * 1e18;
+    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e18;
 
-    YVTokenMock public base;
-    FYTokenMock public fyToken;
-    Pool public pool;
 
-    ERC20User public alice;
-    ERC20User public bob;
-    uint256 aliceYVInitialBalance = 1000 * 1e18;
-    uint256 bobYVInitialBalance = 2_000_000 * 1e18;
+    uint256 public constant initialFYTokens = 0;
+    uint256 public constant initialBase = 0;
 
-    uint32 public maturity = uint32(block.timestamp + THREE_MONTHS);
-
-    int128 public ts;
-
-    // todo: move to utils
-    function almostEqual(
-        uint256 x,
-        uint256 y,
-        uint256 p
-    ) public view {
-        uint256 diff = x > y ? x - y : y - x;
-        if (diff / p > 0) {
-            console.log(x);
-            console.log("is not almost equal to");
-            console.log(y);
-            console.log("with  p of:");
-            console.log(p);
-            revert();
-        }
-    }
-}
-
-abstract contract ZeroState is MintBurnTestCore {
-    using Math64x64 for int128;
-    using Math64x64 for uint128;
-    using Math64x64 for int256;
-    using Math64x64 for uint256;
-    using Exp64x64 for uint128;
-
-    // setup tokenlist for params because passing arrays in Solidity is weird
+    // setup tokenlist for params to ERC20User because passing arrays in Solidity is weird
     address[] public tokenList = new address[](2); // !!!
 
     function setUp() public virtual {
         ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
         // setup mock tokens
         base = new YVTokenMock("Yearn Vault Dai", BASE_SYMBOL, 18, address(0));
-        base.setPrice(109 * 1e16);
+        base.setPrice(cNumerator * 1e18 / cDenominator);
         fyToken = new FYTokenMock("fyToken yvDai maturity 1", FY_SYMBOL, address(base), maturity);
         fyToken.name();
         fyToken.symbol();
 
         // setup pool
-        pool = new Pool(address(base), address(fyToken), ts, G1, G2);
+        pool = new Pool(address(base), address(fyToken), ts, g1, g2, mu);
 
         // assign tokenList params
         tokenList[0] = address(base);
@@ -113,8 +54,6 @@ abstract contract ZeroState is MintBurnTestCore {
         alice.setBalance(base.symbol(), aliceYVInitialBalance);
         bob = new ERC20User("bob", tokenList);
         bob.setBalance(base.symbol(), bobYVInitialBalance);
-
-
     }
 }
 
@@ -123,7 +62,6 @@ abstract contract WithLiquidity is ZeroState {
     function setUp() public override {
         super.setUp();
         base.mint(address(pool), INITIAL_BASE);
-        // alice.takesControl(address(alice));
 
         pool.mint(address(alice), address(bob), 0, MAX);
         uint256 additionalFYToken = INITIAL_BASE / 9;
@@ -132,8 +70,6 @@ abstract contract WithLiquidity is ZeroState {
         fyToken.mint(address(pool), additionalFYToken);
 
         pool.sync();
-
-        alice.releasesControl();
     }
 }
 

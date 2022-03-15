@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 
 
 /// @author @devtooligan -- adapted from Solmate.ERC20User
-contract ERC20User is stdCheats {
+contract ERC20User {
 
     modifier validSymbol(string calldata symbol) {
         require(tokens_[symbol] != address(0), "unknown token symbol");
@@ -26,12 +26,12 @@ contract ERC20User is stdCheats {
         vm.label(address(this), name_);
 
         // register tokens
-        // NOTE: When passing in the erc20Tokens from another contract, you will need to do the following
-        // to coerce the array.  Assume you had 2 tokens.
-        // address[] memory tokenList = address[](2);
-        // tokenList[0] = tokenAddr1;
-        // tokenList[1] = tokenAddr2;
-        // ERC20User alice = ERC20User("alice", tokenList);
+        // NOTE: When passing in the tokenList from another contract, you will need to do the following
+        // to coerce the array because Solidity.  Assume you have 2 tokens:
+        //     address[] memory tokenList = address[](2);  // !!!
+        //     tokenList[0] = tokenAddr1;
+        //     tokenList[1] = tokenAddr2;
+        //     ERC20User alice = ERC20User("alice", tokenList);
         for (uint idx; idx < erc20Tokens.length; ++idx) {
             tokens_[ERC20(erc20Tokens[idx]).symbol()] = erc20Tokens[idx];
         }
@@ -57,23 +57,6 @@ contract ERC20User is stdCheats {
         } else {
             token.transfer(address(0), bal - amount);
         }
-    }
-
-    /// @notice only the very next external call is made by this user
-    /// @dev spoofs msg.sender and txn.origin with this user's address for next external call
-    function pinchHits() public {
-        vm.prank(address(this), address(this));
-    }
-
-    /// @dev all subsequent external calls will be made by this user until releasesControl() is called
-    /// @dev spoofs msg.sender and txn.origin with this user's address for all calls until it's turned off
-    function takesControl() public {
-        vm.startPrank(address(this), address(this));
-    }
-
-    /// @dev msg.sender and txn.origin no longer spoofed from takesControl()
-    function releasesControl() public {
-        vm.stopPrank();
     }
 
 }

@@ -12,7 +12,7 @@ remappings = [
     'forge-std/=lib/forge-std/src/',
     '@yield-protocol/=./node_modules/@yield-protocol/'
 ]
-solc_version = '0.8.11'        # Override for the solc version (setting this ignores `auto_detect_solc`)
+solc_version = '0.8.12'        # Override for the solc version (setting this ignores `auto_detect_solc`)
 src = 'src'
 verbosity = 3                 # The verbosity of tests
 

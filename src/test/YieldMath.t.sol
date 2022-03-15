@@ -67,7 +67,6 @@ contract YieldMathTest is DSTest {
         g2 = gDenominator.fromUInt().div(gNumerator.fromUInt());
         c = cNumerator.fromUInt().div(cDenominator.fromUInt());
         mu = muNumerator.fromUInt().div(muDenominator.fromUInt());
-        // forTesting = new ForTesting();
     }
 
     function assertSameOrSlightlyLess(uint128 result, uint128 expectedResult)
@@ -358,13 +357,15 @@ contract YieldMathTest is DSTest {
             // uint128(50000 * 10**18),
             // uint128(100000 * 10**18),
             // uint128(200000 * 10**18),
-            uint128(50000 * 10 ** 18)
+            // uint128(50000 * 10 ** 18) // good one!
+            uint128(25000 * 10 ** 18)
         ];
         uint128[1] memory expectedResults = [
             // uint128(45581),
             // uint128(91205),
             // uint128(182584),
-            uint128(45313)
+            // uint128(45313)  // good one
+            uint128(22533)
         ];
         uint128 result;
         for (uint256 idx; idx < fyTokenAmounts.length; idx++) {
@@ -373,7 +374,7 @@ contract YieldMathTest is DSTest {
             result =
                 YieldMath.sharesOutForFYTokenIn(
                     sharesReserves,
-                    fyTokenReserves,
+                    2_600_000 * 1e18,
                     fyTokenAmounts[idx], // x or ΔZ
                     timeTillMaturity,
                     k,

@@ -13,8 +13,8 @@ import "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol";
 import "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 
-import {IYVToken} from "src/contracts/interfaces/IYVToken.sol";
-import {IYVPool} from "src/contracts/interfaces/IYVPool.sol";
+import {IYVToken} from "./interfaces/IYVToken.sol";
+import {IYVPool} from "./interfaces/IYVPool.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
@@ -79,7 +79,8 @@ contract Pool is IYVPool, ERC20Permit {
         address fyToken_,
         int128 ts_,
         int128 g1_,
-        int128 g2_
+        int128 g2_,
+        int128 mu_
     )
         ERC20Permit(
             string(
@@ -111,8 +112,9 @@ contract Pool is IYVPool, ERC20Permit {
         g1 = g1_;
         g2 = g2_;
 
+
         scaleFactor = uint96(10**(18 - uint96(decimals)));
-        mu = int128(uint128(base.pricePerShare())); // TOdO: Use safecast
+        mu = mu_;
     }
 
     /// @dev Trading can only be done before maturity
@@ -162,9 +164,8 @@ contract Pool is IYVPool, ERC20Permit {
 
     /// @dev Returns the base current price
     function getBaseCurrentPrice() public view returns(uint256) {
-        return _getBaseCurrentPrice();
+        return base.pricePerShare();
     }
-
 
     /// @dev Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
     function _getFYTokenBalance() internal view returns (uint112) {
@@ -177,9 +178,8 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /// @dev Returns the base current price
-    function _getBaseCurrentPrice() internal view returns(uint256) {
-        //TODO: update with base.pricePerShare()
-        return 1090861847614064956;
+    function _getC() internal view returns(int128) {
+        return ((base.pricePerShare() * scaleFactor).fromUInt()).div(uint256(1e18).fromUInt());
     }
 
     /// @dev Retrieve any base tokens not accounted for in the cache
@@ -489,8 +489,8 @@ contract Pool is IYVPool, ERC20Permit {
                     maturity - uint32(block.timestamp), // This can't be called after maturity
                     ts,
                     g2,
-                    int128(107 * 10**16), // shareToken.pricePerShare(),
-                    int128(107 * 10**16) // mu
+                    _getC(),
+                    mu
                 ) /
                 scaleFactor;
             fyTokenOut = 0;
@@ -776,8 +776,8 @@ contract Pool is IYVPool, ERC20Permit {
                 maturity - uint32(block.timestamp), // This can't be called after maturity
                 ts,
                 g2,
-                int128(107 * 10**16),
-                int128(107 * 10**16)
+                _getC(),
+                mu
             ) / scaleFactor;
     }
 
