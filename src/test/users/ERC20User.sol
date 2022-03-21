@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.11;
+pragma solidity >=0.8.12;
 
 import {Mintable as ERC20} from "src/test/mocks/YVTokenMock.sol";
 import "forge-std/stdlib.sol";
@@ -10,12 +10,12 @@ import {console} from "forge-std/console.sol";
 contract ERC20User {
 
     modifier validSymbol(string calldata symbol) {
-        require(tokens_[symbol] != address(0), "unknown token symbol");
+        require(symbolToToken_[symbol] != address(0), "unknown token symbol");
         _;
     }
 
     Vm public constant vm = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
-    mapping(string => address) private tokens_; // token addys by symbol
+    mapping(string => address) private symbolToToken_; // token addys by symbol
     string public name;
 
     constructor(
@@ -33,7 +33,7 @@ contract ERC20User {
         //     tokenList[1] = tokenAddr2;
         //     ERC20User alice = ERC20User("alice", tokenList);
         for (uint idx; idx < erc20Tokens.length; ++idx) {
-            tokens_[ERC20(erc20Tokens[idx]).symbol()] = erc20Tokens[idx];
+            symbolToToken_[ERC20(erc20Tokens[idx]).symbol()] = erc20Tokens[idx];
         }
     }
 
@@ -45,11 +45,11 @@ contract ERC20User {
     ///
     function tokens(string calldata symbol) public validSymbol(symbol) returns(ERC20) {
         vm.prank(address(this));  // <<- sneaky
-        return ERC20(tokens_[symbol]);
+        return ERC20(symbolToToken_[symbol]);
     }
 
     function setBalance(string calldata symbol, uint256 amount) public validSymbol(symbol) {
-        ERC20 token = ERC20(tokens_[symbol]);
+        ERC20 token = ERC20(symbolToToken_[symbol]);
         uint256 bal = token.balanceOf(address(this));
         if (bal == amount) return;
         if (bal < amount) {

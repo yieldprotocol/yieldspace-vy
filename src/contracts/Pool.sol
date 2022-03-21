@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.11;
+pragma solidity >=0.8.12;
 
 import "@yield-protocol/utils-v2/contracts/token/IERC20.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
@@ -34,13 +34,7 @@ contract Pool is IYVPool, ERC20Permit {
     using MinimalTransferHelper for IFYToken;
     using MinimalTransferHelper for IYVToken;
 
-    event Trade(
-        uint32 maturity,
-        address indexed from,
-        address indexed to,
-        int256 bases,
-        int256 fyTokens
-    );
+    event Trade(uint32 maturity, address indexed from, address indexed to, int256 bases, int256 fyTokens);
     event Liquidity(
         uint32 maturity,
         address indexed from,
@@ -50,11 +44,7 @@ contract Pool is IYVPool, ERC20Permit {
         int256 fyTokens,
         int256 poolTokens
     );
-    event Sync(
-        uint112 baseCached,
-        uint112 fyTokenCached,
-        uint256 cumulativeBalancesRatio
-    );
+    event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
 
     int128 public immutable mu; // The normalization coefficient -- which is the initial c value
     int128 public immutable override ts; // 1 / Seconds in 10 years, in 64.64
@@ -83,18 +73,8 @@ contract Pool is IYVPool, ERC20Permit {
         int128 mu_
     )
         ERC20Permit(
-            string(
-                abi.encodePacked(
-                    IERC20Metadata(fyToken_).name(),
-                    " LP"
-                )
-            ),
-            string(
-                abi.encodePacked(
-                    IERC20Metadata(fyToken_).symbol(),
-                    "LP"
-                )
-            ),
+            string(abi.encodePacked(IERC20Metadata(fyToken_).name(), " LP")),
+            string(abi.encodePacked(IERC20Metadata(fyToken_).symbol(), "LP")),
             IERC20Metadata(fyToken_).decimals()
         )
     {
@@ -102,16 +82,12 @@ contract Pool is IYVPool, ERC20Permit {
         base = IYVToken(base_);
 
         uint256 maturity_ = IFYToken(fyToken_).maturity();
-        require(
-            maturity_ <= type(uint32).max,
-            "Pool: Maturity too far in the future"
-        );
+        require(maturity_ <= type(uint32).max, "Pool: Maturity too far in the future");
         maturity = uint32(maturity_);
 
         ts = ts_;
         g1 = g1_;
         g2 = g2_;
-
 
         scaleFactor = uint96(10**(18 - uint96(decimals)));
         mu = mu_;
@@ -127,12 +103,7 @@ contract Pool is IYVPool, ERC20Permit {
 
     /// @dev Updates the cache to match the actual balances.
     function sync() external {
-        _update(
-            _getBaseBalance(),
-            _getFYTokenBalance(),
-            baseCached,
-            fyTokenCached
-        );
+        _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
     }
 
     /// @dev Returns the cached balances & last updated timestamp.
@@ -178,27 +149,19 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /// @dev Returns the base current price
-    function _getC() internal view returns(int128) {
+    function _getC() internal view returns (int128) {
         return ((base.pricePerShare() * scaleFactor).fromUInt()).div(uint256(1e18).fromUInt());
     }
 
     /// @dev Retrieve any base tokens not accounted for in the cache
-    function retrieveBase(address to)
-        external
-        override
-        returns (uint128 retrieved)
-    {
+    function retrieveBase(address to) external override returns (uint128 retrieved) {
         retrieved = _getBaseBalance() - baseCached; // Cache can never be above balances
         base.safeTransfer(to, retrieved);
         // Now the current balances match the cache, so no need to update the TWAR
     }
 
     /// @dev Retrieve any fyTokens not accounted for in the cache
-    function retrieveFYToken(address to)
-        external
-        override
-        returns (uint128 retrieved)
-    {
+    function retrieveFYToken(address to) external override returns (uint128 retrieved) {
         retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
         fyToken.safeTransfer(to, retrieved);
         // Now the balances match the cache, so no need to update the TWAR
@@ -220,9 +183,7 @@ contract Pool is IYVPool, ERC20Permit {
         if (timeElapsed > 0 && baseCached_ != 0 && fyTokenCached_ != 0) {
             // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
             uint256 scaledFYTokenCached = uint256(fyTokenCached_) * 1e27;
-            cumulativeBalancesRatio_ +=
-                (scaledFYTokenCached * timeElapsed) /
-                baseCached_;
+            cumulativeBalancesRatio_ += (scaledFYTokenCached * timeElapsed) / baseCached_;
             cumulativeBalancesRatio = cumulativeBalancesRatio_;
         }
         baseCached = baseBalance.u112();
@@ -311,10 +272,7 @@ contract Pool is IYVPool, ERC20Permit {
     {
         // Gather data
         uint256 supply = _totalSupply;
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         uint256 _realFYTokenCached = _fyTokenCached - supply; // The fyToken cache includes the virtual fyToken, equal to the supply
         uint256 baseBalance = base.balanceOf(address(this));
         uint256 fyTokenBalance = fyToken.balanceOf(address(this));
@@ -323,10 +281,8 @@ contract Pool is IYVPool, ERC20Permit {
         // Check the burn wasn't sandwiched
         require(
             _realFYTokenCached == 0 ||
-                ((uint256(_baseCached) * 1e18) / _realFYTokenCached >=
-                    minRatio &&
-                    (uint256(_baseCached) * 1e18) / _realFYTokenCached <=
-                    maxRatio),
+                ((uint256(_baseCached) * 1e18) / _realFYTokenCached >= minRatio &&
+                    (uint256(_baseCached) * 1e18) / _realFYTokenCached <= maxRatio),
             "Pool: Reserves ratio changed"
         );
 
@@ -343,22 +299,13 @@ contract Pool is IYVPool, ERC20Permit {
             // There is an optional virtual trade before the mint
             uint256 baseToSell;
             if (fyTokenToBuy > 0) {
-                baseToSell = _buyFYTokenPreview(
-                    fyTokenToBuy.u128(),
-                    _baseCached,
-                    _fyTokenCached
-                );
+                baseToSell = _buyFYTokenPreview(fyTokenToBuy.u128(), _baseCached, _fyTokenCached);
             }
 
             // We use all the available fyTokens, plus a virtual trade if it happened, surplus is in base tokens
             fyTokenIn = fyTokenBalance - _realFYTokenCached;
-            tokensMinted =
-                (supply * (fyTokenToBuy + fyTokenIn)) /
-                (_realFYTokenCached - fyTokenToBuy);
-            baseIn =
-                baseToSell +
-                ((_baseCached + baseToSell) * tokensMinted) /
-                supply;
+            tokensMinted = (supply * (fyTokenToBuy + fyTokenIn)) / (_realFYTokenCached - fyTokenToBuy);
+            baseIn = baseToSell + ((_baseCached + baseToSell) * tokensMinted) / supply;
             require(baseAvailable >= baseIn, "Pool: Not enough base token in");
         }
 
@@ -374,8 +321,7 @@ contract Pool is IYVPool, ERC20Permit {
         _mint(to, tokensMinted);
 
         // Return any unused base
-        if (baseAvailable - baseIn > 0)
-            base.safeTransfer(remainder, baseAvailable - baseIn);
+        if (baseAvailable - baseIn > 0) base.safeTransfer(remainder, baseAvailable - baseIn);
 
         emit Liquidity(
             maturity,
@@ -424,13 +370,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint256 minRatio,
         uint256 maxRatio
     ) external override returns (uint256 tokensBurned, uint256 baseOut) {
-        (tokensBurned, baseOut, ) = _burnInternal(
-            to,
-            address(0),
-            true,
-            minRatio,
-            maxRatio
-        );
+        (tokensBurned, baseOut, ) = _burnInternal(to, address(0), true, minRatio, maxRatio);
     }
 
     /// @dev Burn liquidity tokens in exchange for base.
@@ -460,19 +400,14 @@ contract Pool is IYVPool, ERC20Permit {
         // Gather data
         tokensBurned = _balanceOf[address(this)];
         uint256 supply = _totalSupply;
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         uint256 _realFYTokenCached = _fyTokenCached - supply; // The fyToken cache includes the virtual fyToken, equal to the supply
 
         // Check the burn wasn't sandwiched
         require(
             _realFYTokenCached == 0 ||
-                ((uint256(_baseCached) * 1e18) / _realFYTokenCached >=
-                    minRatio &&
-                    (uint256(_baseCached) * 1e18) / _realFYTokenCached <=
-                    maxRatio),
+                ((uint256(_baseCached) * 1e18) / _realFYTokenCached >= minRatio &&
+                    (uint256(_baseCached) * 1e18) / _realFYTokenCached <= maxRatio),
             "Pool: Reserves ratio changed"
         );
 
@@ -507,8 +442,7 @@ contract Pool is IYVPool, ERC20Permit {
         // Transfer assets
         _burn(address(this), tokensBurned);
         base.safeTransfer(baseTo, tokenOut);
-        if (fyTokenOut > 0)
-            fyToken.safeTransfer(fyTokenTo, fyTokenOut);
+        if (fyTokenOut > 0) fyToken.safeTransfer(fyTokenTo, fyTokenOut);
 
         emit Liquidity(
             maturity,
@@ -523,67 +457,69 @@ contract Pool is IYVPool, ERC20Permit {
 
     // ---- Trading ----
 
+/**
+
+            *****
+           * GUY *                                                 ┌─────────┐
+  (^^^|    **********   ┌──────────────┐                           │no       │
+   \(\/    | -  - |     │$            $│                           │lifeguard│
+    \ \   .  O  O  .    │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
+     \ \   |  ~~  |     │ │$            $│                           │     │    =======+
+     \  \   \ == /      │ │              │                      _____│_____│______    |+
+      \  \___|  |___    │$│    B A S E   │                  .-'"___________________`-.|+
+       \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+
+        \            \    └──────────────┘                 |`-..__________________..-'|+
+         --|  GUY |\_/\  / /                               |                          |+
+           |      | \  \/ /                                |                          |+
+           |      |  \   /         _......._             /`|       ---     ---        |+
+           |      |   \_/       .-:::::::::::-.         / /|       (  )    (  )       |+
+           |______|           .:::::::::::::::::.      / / |                          |+
+           |__X___|          :  _______  __   __ : _.-" ;  |            [             |+
+           |      |         :: |       ||  | |  |::),.-'   |        ----------        |+
+           |  |   |        ::: |    ___||  |_|  |:::/      \        \________/        /+
+           |  |  _|        ::: |   |___ |       |:::        `-..__________________..-' +=
+           |  |  |         ::: |    ___||_     _|:::               |    | |    |
+           |  |  |         ::: |   |      |   |  :::               |    | |    |
+           (  (  |          :: |___|      |___|  ::                |    | |    |
+           |  |  |           :                   :                 T----T T----T
+           |  |  |            `:::::::::::::::::'             _..._L____J L____J _..._
+          _|  |  |              `-:::::::::::-'             .` "-. `%   | |    %` .-" `.
+         (_____[__)                `'''''''`               /      \    .: :.     /      \
+                                                           '-..___|_..=:` `-:=.._|___..-'
+
+ */
+
     /// @dev Sell base for fyToken.
     /// The trader needs to have transferred the amount of base to sell to the pool before in the same transaction.
     /// @param to Wallet receiving the fyToken being bought
     /// @param min Minimm accepted amount of fyToken
     /// @return Amount of fyToken that will be deposited on `to` wallet
-    function sellBase(address to, uint128 min)
-        external
-        override
-        returns (uint128)
-    {
+    function sellBase(address to, uint128 min) external override returns (uint128) {
         // Calculate trade
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         uint112 _baseBalance = _getBaseBalance();
         uint112 _fyTokenBalance = _getFYTokenBalance();
         uint128 baseIn = _baseBalance - _baseCached;
-        uint128 fyTokenOut = _sellBasePreview(
-            baseIn,
-            _baseCached,
-            _fyTokenBalance
-        );
+        uint128 fyTokenOut = _sellBasePreview(baseIn, _baseCached, _fyTokenBalance);
 
         // Slippage check
         require(fyTokenOut >= min, "Pool: Not enough fyToken obtained");
 
         // Update TWAR
-        _update(
-            _baseBalance,
-            _fyTokenBalance - fyTokenOut,
-            _baseCached,
-            _fyTokenCached
-        );
+        _update(_baseBalance, _fyTokenBalance - fyTokenOut, _baseCached, _fyTokenCached);
 
         // Transfer assets
         fyToken.safeTransfer(to, fyTokenOut);
 
-        emit Trade(
-            maturity,
-            msg.sender,
-            to,
-            -(baseIn.i128()),
-            fyTokenOut.i128()
-        );
+        emit Trade(maturity, msg.sender, to, -(baseIn.i128()), fyTokenOut.i128());
         return fyTokenOut;
     }
 
     /// @dev Returns how much fyToken would be obtained by selling `baseIn` base
     /// @param baseIn Amount of base hypothetically sold.
     /// @return Amount of fyToken hypothetically bought.
-    function sellBasePreview(uint128 baseIn)
-        external
-        view
-        override
-        returns (uint128)
-    {
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
+    function sellBasePreview(uint128 baseIn) external view override returns (uint128) {
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _sellBasePreview(baseIn, _baseCached, _fyTokenCached);
     }
 
@@ -600,18 +536,47 @@ contract Pool is IYVPool, ERC20Permit {
             maturity - uint32(block.timestamp), // This can't be called after maturity
             ts,
             g1,
-            int128(107 * 10**16),
-            int128(107 * 10**16)
+            _getC(),
+            mu
         ) / scaleFactor;
 
-        require(
-            fyTokenBalance - fyTokenOut >= baseBalance + baseIn,
-            "Pool: fyToken balance too low"
-        );
+        require(fyTokenBalance - fyTokenOut >= baseBalance + baseIn, "Pool: fyToken balance too low");
 
         return fyTokenOut;
     }
 
+/**
+
+                                _......._
+            *****            .-:::::::::::-.
+           * GUY *         .:::::::::::::::::.
+  (^^^|    **********     :  _______  __   __ :                 ┌─────────┐
+   \(\/    | -  - |      :: |       ||  | |  |::                │no       │
+    \ \   .  O  O  .    ::: |    ___||  |_|  |:::               │lifeguard│
+     \ \   |  ~~  |     ::: |   |___ |       |:::               └─┬─────┬─┘       ==+
+     \  \   \ == /      ::: |    ___||_     _|:::                 │     │    =======+
+      \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
+       \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
+        \            \    :                   :         ( .'"                   '-.)+
+         --|  GUY |\_/\  / `:::::::::::::::::'          |`-..__________________..-'|+
+           |      | \  \/ /  `-:::::::::::-'            |                          |+
+           |      |  \   /      `'''''''`               |                          |+
+           |      |   \_/                               |       ---     ---        |+
+           |______|                                     |       (  )    (  )       |+
+           |__X___|             ┌──────────────┐      /`|                          |+
+           |      |             │$            $│     / /|            [             |+
+           |  |   |             │              │    / / |        ----------        |+
+           |  |  _|             │    B A S E   │\.-" ;  \        \________/        /+
+           |  |  |              │$            $│),.-'    `-..__________________..-' +=
+           |  |  |              └──────────────┘                |    | |    |
+           (  (  |                                              |    | |    |
+           |  |  |                                              |    | |    |
+           |  |  |                                              T----T T----T
+          _|  |  |                                         _..._L____J L____J _..._
+         (_____[__)                                      .` "-. `%   | |    %` .-" `.
+                                                        /      \    .: :.     /      \
+                                                        '-..___|_..=:` `-:=.._|___..-'
+ */
     /// @dev Buy base for fyToken
     /// The trader needs to have called `fyToken.approve`
     /// @param to Wallet receiving the base being bought
@@ -625,57 +590,28 @@ contract Pool is IYVPool, ERC20Permit {
     ) external override returns (uint128) {
         // Calculate trade
         uint128 fyTokenBalance = _getFYTokenBalance();
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
-        uint128 fyTokenIn = _buyBasePreview(
-            tokenOut,
-            _baseCached,
-            _fyTokenCached
-        );
-        require(
-            fyTokenBalance - _fyTokenCached >= fyTokenIn,
-            "Pool: Not enough fyToken in"
-        );
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
+        uint128 fyTokenIn = _buyBasePreview(tokenOut, _baseCached, _fyTokenCached);
+        require(fyTokenBalance - _fyTokenCached >= fyTokenIn, "Pool: Not enough fyToken in");
 
         // Slippage check
         require(fyTokenIn <= max, "Pool: Too much fyToken in");
 
         // Update TWAR
-        _update(
-            _baseCached - tokenOut,
-            _fyTokenCached + fyTokenIn,
-            _baseCached,
-            _fyTokenCached
-        );
+        _update(_baseCached - tokenOut, _fyTokenCached + fyTokenIn, _baseCached, _fyTokenCached);
 
         // Transfer assets
         base.safeTransfer(to, tokenOut);
 
-        emit Trade(
-            maturity,
-            msg.sender,
-            to,
-            tokenOut.i128(),
-            -(fyTokenIn.i128())
-        );
+        emit Trade(maturity, msg.sender, to, tokenOut.i128(), -(fyTokenIn.i128()));
         return fyTokenIn;
     }
 
     /// @dev Returns how much fyToken would be required to buy `tokenOut` base.
     /// @param tokenOut Amount of base hypothetically desired.
     /// @return Amount of fyToken hypothetically required.
-    function buyBasePreview(uint128 tokenOut)
-        external
-        view
-        override
-        returns (uint128)
-    {
-        (uint112 _baseCached, uint112 _fyTokenCached) = (
-            baseCached,
-            fyTokenCached
-        );
+    function buyBasePreview(uint128 tokenOut) external view override returns (uint128) {
+        (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _buyBasePreview(tokenOut, _baseCached, _fyTokenCached);
     }
 
@@ -780,6 +716,40 @@ contract Pool is IYVPool, ERC20Permit {
                 mu
             ) / scaleFactor;
     }
+
+
+/**
+
+            *****
+           * GUY *                                                 ┌─────────┐
+  (^^^|    **********   ┌──────────────┐                           │no       │
+   \(\/    | -  - |     │$            $│                           │lifeguard│
+    \ \   .  O  O  .    │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
+     \ \   |  ~~  |     │ │$            $│                           │     │    =======+
+     \  \   \ == /      │ │              │                      _____│_____│______    |+
+      \  \___|  |___    │$│    B A S E   │                  .-'"___________________`-.|+
+       \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+
+        \            \    └──────────────┘                 |`-..__________________..-'|+
+         --|  GUY |\_/\  / /                               |                          |+
+           |      | \  \/ /                                |                          |+
+           |      |  \   /         _......._             /`|       ---     ---        |+
+           |      |   \_/       .-:::::::::::-.         / /|       (  )    (  )       |+
+           |______|           .:::::::::::::::::.      / / |                          |+
+           |__X___|          :  _______  __   __ : _.-" ;  |            [             |+
+           |      |         :: |       ||  | |  |::),.-'   |        ----------        |+
+           |  |   |        ::: |    ___||  |_|  |:::/      \        \________/        /+
+           |  |  _|        ::: |   |___ |       |:::        `-..__________________..-' +=
+           |  |  |         ::: |    ___||_     _|:::               |    | |    |
+           |  |  |         ::: |   |      |   |  :::               |    | |    |
+           (  (  |          :: |___|      |___|  ::                |    | |    |
+           |  |  |           :                   :                 T----T T----T
+           |  |  |            `:::::::::::::::::'             _..._L____J L____J _..._
+          _|  |  |              `-:::::::::::-'             .` "-. `%   | |    %` .-" `.
+         (_____[__)                `'''''''`               /      \    .: :.     /      \
+                                                           '-..___|_..=:` `-:=.._|___..-'
+
+ */
+
 
     /// @dev Buy fyToken for base
     /// The trader needs to have called `base.approve`

@@ -1,61 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.11;
+pragma solidity >=0.8.12;
 
-import "forge-std/stdlib.sol";
-import {Vm} from "forge-std/Vm.sol";
-import {console} from "forge-std/console.sol";
+import "forge-std/stdlib.sol";//
+import {Vm} from "forge-std/Vm.sol";//
+import {console} from "forge-std/console.sol";//
 
-import "./shared/Utils.sol";
-import "./shared/Constants.sol";
-import {Pool} from "../contracts/Pool.sol";
-import {TestCore} from "./shared/TestCore.sol";
-import {ERC20User} from "./users/ERC20User.sol";
-import {Exp64x64} from "../contracts/Exp64x64.sol";
-import {FYTokenMock} from "./mocks/FYTokenMock.sol";
-import {YVTokenMock} from "./mocks/YVTokenMock.sol";
-import {Math64x64} from "../contracts/Math64x64.sol";
-import {YieldMath} from "../contracts/YieldMath.sol";
+import "./shared/Utils.sol";//
+import "./shared/Constants.sol";//
+import {Pool} from "../contracts/Pool.sol";//
+import {PoolUser} from "./users/PoolUser.sol";//
+import {FYTokenMock} from "./mocks/FYTokenMock.sol";//
+import {YVTokenMock} from "./mocks/YVTokenMock.sol";//
 
-abstract contract ZeroState is TestCore {
-    using Math64x64 for int128;
-    using Math64x64 for uint128;
-    using Math64x64 for int256;
-    using Math64x64 for uint256;
-    using Exp64x64 for uint128;
+import {ZeroState} from "./shared/ZeroState.sol";//
 
-    uint256 public constant aliceYVInitialBalance = 1000 * 1e18;
-    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e18;
-
-
-    uint256 public constant initialFYTokens = 0;
-    uint256 public constant initialBase = 0;
-
-    // setup tokenlist for params to ERC20User because passing arrays in Solidity is weird
-    address[] public tokenList = new address[](2); // !!!
-
-    function setUp() public virtual {
-        ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
-        // setup mock tokens
-        base = new YVTokenMock("Yearn Vault Dai", BASE_SYMBOL, 18, address(0));
-        base.setPrice(cNumerator * 1e18 / cDenominator);
-        fyToken = new FYTokenMock("fyToken yvDai maturity 1", FY_SYMBOL, address(base), maturity);
-        fyToken.name();
-        fyToken.symbol();
-
-        // setup pool
-        pool = new Pool(address(base), address(fyToken), ts, g1, g2, mu);
-
-        // assign tokenList params
-        tokenList[0] = address(base);
-        tokenList[1] = address(fyToken);
-
-        // setup users
-        alice = new ERC20User("alice", tokenList);
-        alice.setBalance(base.symbol(), aliceYVInitialBalance);
-        bob = new ERC20User("bob", tokenList);
-        bob.setBalance(base.symbol(), bobYVInitialBalance);
-    }
-}
+import {Exp64x64} from "../contracts/Exp64x64.sol";//
+import {Math64x64} from "../contracts/Math64x64.sol";//
+import {YieldMath} from "../contracts/YieldMath.sol";//
 
 abstract contract WithLiquidity is ZeroState {
     // used in 2 test suites __WithLiquidity
@@ -77,8 +38,7 @@ contract Mint__ZeroState is ZeroState {
     function testUnit_mint1() public {
         console.log("adds initial liquidity");
 
-        vm.startPrank(address(bob));
-        base.transfer(address(pool), INITIAL_BASE);
+        bob.tokens(BASE).transfer(address(pool), INITIAL_BASE);
         vm.expectEmit(true, true, true, true);
         emit Liquidity(
             maturity,
@@ -89,6 +49,8 @@ contract Mint__ZeroState is ZeroState {
             int256(0),
             int256(INITIAL_BASE)
         );
+
+        vm.prank(address(bob));
         pool.mint(address(bob), address(bob), 0, MAX);
 
         vm.stopPrank();
@@ -103,17 +65,15 @@ contract Mint__ZeroState is ZeroState {
         console.log("adds liquidity with zero fyToken");
         base.mint(address(pool), INITIAL_BASE);
 
-        vm.startPrank(address(alice));
-        pool.mint(address(0), address(0), 0, MAX);
+        alice.pool().mint(address(0), address(0), 0, MAX);
 
         // After initializing, donate base and sync to simulate having reached zero fyToken through trading
-        base.mint(address(pool), INITIAL_BASE);
+        alice.tokens(BASE).mint(address(pool), INITIAL_BASE);
         pool.sync();
 
         base.mint(address(pool), INITIAL_BASE);
         pool.mint(address(bob), address(bob), 0, MAX);
 
-        vm.stopPrank();
 
         require(pool.balanceOf(address(bob)) == INITIAL_BASE / 2);
         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
@@ -151,8 +111,7 @@ contract Mint__WithLiquidity is WithLiquidity {
         base.mint(address(pool), expectedBaseIn + 1e18); // send an extra wad of base
         fyToken.mint(address(pool), fyTokenIn);
 
-        vm.prank(address(alice));
-        pool.mint(address(bob), address(bob), 0, MAX);
+        alice.pool().mint(address(bob), address(bob), 0, MAX);
 
         uint256 minted = pool.balanceOf(address(bob)) - poolTokensBefore;
 
@@ -184,14 +143,13 @@ contract Burn__WithLiquidity is WithLiquidity {
         uint256 poolSup = pool.totalSupply();
         uint256 lpTokensIn = WAD;
 
-        ERC20User charlie = new ERC20User("charlie", tokenList);
+        PoolUser charlie = new PoolUser("charlie", tokenList, address(pool));
 
         uint256 expectedBaseOut = (lpTokensIn * baseBalance) / poolSup;
         uint256 expectedFYTokenOut = (lpTokensIn * fyTokenBalance) / poolSup;
 
         // alice transfers in lp tokens then burns them
-        vm.startPrank(address(alice));
-        pool.transfer(address(pool), lpTokensIn);
+        alice.pool().transfer(address(pool), lpTokensIn);
 
         vm.expectEmit(true, true, true, true);
         emit Liquidity(
@@ -203,9 +161,9 @@ contract Burn__WithLiquidity is WithLiquidity {
             int256(expectedFYTokenOut),
             -int256(lpTokensIn)
         );
+        vm.prank(address(alice));
         pool.burn(address(bob), address(charlie), 0, MAX);
 
-        vm.stopPrank();
 
         uint256 baseOut = baseBalance - base.balanceOf(address(pool));
         uint256 fyTokenOut = fyTokenBalance - fyToken.balanceOf(address(pool));

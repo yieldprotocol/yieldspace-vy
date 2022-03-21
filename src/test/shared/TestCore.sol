@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.11;
+pragma solidity >=0.8.12;
 
 import "forge-std/stdlib.sol";
 import {Vm} from "forge-std/Vm.sol";
@@ -8,7 +8,7 @@ import {console} from "forge-std/console.sol";
 import "./Utils.sol";
 import "./Constants.sol";
 import {Pool} from "../../contracts/Pool.sol";
-import {ERC20User} from "../users/ERC20User.sol";
+import {PoolUser} from "../users/PoolUser.sol";
 import {Exp64x64} from "../../contracts/Exp64x64.sol";
 import {FYTokenMock} from "../mocks/FYTokenMock.sol";
 import {YVTokenMock} from "../mocks/YVTokenMock.sol";
@@ -42,8 +42,8 @@ abstract contract TestCore {
     FYTokenMock public fyToken;
     Pool public pool;
 
-    ERC20User public alice;
-    ERC20User public bob;
+    PoolUser public alice;
+    PoolUser public bob;
 
     uint32 public maturity = uint32(block.timestamp + THREE_MONTHS);
 
