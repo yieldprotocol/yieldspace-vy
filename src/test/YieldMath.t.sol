@@ -207,7 +207,8 @@ contract YieldMathTest is DSTest {
         assertSameOrSlightlyLess(result, expectedResult);
     }
 
-    function testUnit_fyTokenOutForSharesIn__increaseG() public view {
+    // function testUnit_fyTokenOutForSharesIn__increaseG() public view {
+    function testUnit_fyTokenOutForSharesIn__increaseG() public {
         // increase in g results in increase in fyTokenOut
         // NOTE: potential fuzz test
         uint128 amount = uint128(100000 * 10**18);

@@ -60,6 +60,22 @@ abstract contract ZeroStateUSDC is TestCore {
 }
 
 
+abstract contract WithExtraFYTokenUSDC is ZeroStateUSDC {
+    using Math64x64 for int128;
+    using Math64x64 for uint128;
+    using Math64x64 for int256;
+    using Math64x64 for uint256;
+    using Exp64x64 for uint128;
+
+    function setUp() public virtual override {
+        super.setUp();
+        uint256 additionalFYToken = 30 * WAD;
+        fyToken.mint(address(this), additionalFYToken);
+        vm.prank(address(alice));
+        pool.sellFYToken(address(this), 0);
+    }
+}
+
 contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
     using Math64x64 for uint256;
     using Math64x64 for int128;
@@ -105,8 +121,8 @@ contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
     function testUnit_tradeUSDC03() public {
         console.log("donates base and sells fyToken");
 
-        uint256 baseDonation = WAD;
-        uint256 fyTokenIn = WAD;
+        uint256 baseDonation = 1e6;
+        uint256 fyTokenIn = 1e6;
 
         base.mint(address(pool), baseDonation);
         fyToken.mint(address(pool), fyTokenIn);
@@ -150,14 +166,12 @@ contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
 
         require(base.balanceOf(address(bob)) == userBaseBefore + baseOut);
 
-        console.log("TradingUSDC.t.sol ~ line 154 ~ testUnit_tradeUSDC04 ~ expectedFYTokenIn", expectedFYTokenIn);
-        console.log("TradingUSDC.t.sol ~ line 154 ~ testUnit_tradeUSDC04 ~ fyTokenIn", fyTokenIn);
         almostEqual(fyTokenIn, expectedFYTokenIn, 1);
 
-        // (uint112 baseBalAfter, uint112 fyTokenBalAfter, uint32 unused2) = pool.getCache();
+        (uint112 baseBalAfter, uint112 fyTokenBalAfter, uint32 unused2) = pool.getCache();
 
-        // require(baseBalAfter == pool.getBaseBalance());
-        // require(fyTokenBalAfter + fyTokenChange == pool.getFYTokenBalance());
+        require(baseBalAfter == pool.getBaseBalance());
+        require(fyTokenBalAfter + fyTokenChange == pool.getFYTokenBalance());
     }
 
     function testUnit_tradeUSDC05() public {
@@ -168,27 +182,42 @@ contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
         pool.buyBase(address(bob), baseOut, 0);
     }
 
+    function testUnit_tradeDAI06() public {
+        console.log("buys base and retrieves change");
+        uint256 userBaseBefore = base.balanceOf(address(alice));
+        uint256 userFYTokenBefore = fyToken.balanceOf(address(alice));
+        uint128 baseOut = uint128(1e6);
+
+        fyToken.mint(address(pool), initialFYTokens);
+
+        alice.pool().buyBase(address(bob), baseOut, uint128(MAX));
+        require(base.balanceOf(address(bob)) == userBaseBefore + baseOut);
+
+        (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+        require(baseBal == pool.getBaseBalance());
+        require(fyTokenBal != pool.getFYTokenBalance());
+
+        alice.pool().retrieveFYToken(address(alice));
+
+        require(fyToken.balanceOf(address(alice)) > userFYTokenBefore);
+    }
+
 }
 
-contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
+contract TradeDAI__WithExtraFYToken is WithExtraFYTokenUSDC {
     using Math64x64 for uint256;
     using Math64x64 for int128;
 
     function testUnit_tradeUSDC07() public {
-        console.log("sells base for a certain amount of FYTokens");
         uint128 baseIn = uint128(25000 * 1e6);
         uint256 userFYTokenBefore = fyToken.balanceOf(address(bob));
-        console.log("TradingUSDC.t.sol ~ line 181 ~ testUnit_tradeUSDC07 ~ userFYTokenBefore", userFYTokenBefore);
 
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
-        console.log("TradingUSDC.t.sol ~ line 184 ~ testUnit_tradeUSDC07 ~ virtFYTokenBal", virtFYTokenBal);
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
-        console.log("TradingUSDC.t.sol ~ line 186 ~ testUnit_tradeUSDC07 ~ sharesReserves", sharesReserves);
         int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
 
         // Transfer base for sale to the pool
-        base.mint(address(pool), baseIn * 1e12);
-
+        base.mint(address(pool), baseIn);
         uint256 expectedFYTokenOut = YieldMath.fyTokenOutForSharesIn(
             sharesReserves * 1e12,
             virtFYTokenBal * 1e12,
@@ -212,7 +241,7 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
 
     function testUnit_tradeUSDC08() public {
         console.log("does not sell base beyond slippage");
-        uint128 baseIn = uint128(WAD);
+        uint128 baseIn = uint128(1e6);
         base.mint(address(pool), baseIn);
 
         vm.expectRevert(bytes("Pool: Not enough fyToken obtained"));
@@ -222,8 +251,8 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
 
     function testUnit_tradeUSDC09() public {
         console.log("donates fyToken and sells base");
-        uint128 baseIn = uint128(WAD);
-        uint128 fyTokenDonation = uint128(WAD);
+        uint128 baseIn = uint128(1e6);
+        uint128 fyTokenDonation = uint128(1e6);
 
         fyToken.mint(address(pool), fyTokenDonation);
         base.mint(address(pool), baseIn);
@@ -240,7 +269,7 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
         console.log("buys a certain amount of fyTokens with base");
         (uint112 baseCachedBefore, uint112 unused1, uint32 unused2) = pool.getCache();
         uint256 userFYTokenBefore = fyToken.balanceOf(address(bob));
-        uint128 fyTokenOut = uint128(WAD);
+        uint128 fyTokenOut = uint128(1e6);
 
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
@@ -260,11 +289,7 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
             mu
         );
 
-        vm.expectEmit(true, true, false, true);
-        emit Trade(maturity, address(alice), address(bob), -int128(int256(expectedBaseIn)), int256(int128(fyTokenOut)));
-
-        vm.prank(address(alice));
-        pool.buyFYToken(address(bob), fyTokenOut, uint128(MAX));
+        alice.pool().buyFYToken(address(bob), fyTokenOut, uint128(MAX));
 
         (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent, uint32 unused4) = pool.getCache();
 
@@ -276,14 +301,14 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
             "'User2' wallet should have 1 fyToken token"
         );
 
-        almostEqual(baseIn, expectedBaseIn, baseIn / 1000000);
+        almostEqual(baseIn, expectedBaseIn, baseIn / 100000);
         require(baseCachedCurrent + baseChange == pool.getBaseBalance());
         require(fyTokenCachedCurrent == pool.getFYTokenBalance());
     }
 
     function testUnit_tradeUSDC11() public {
         console.log("does not buy fyToken beyond slippage");
-        uint128 fyTokenOut = uint128(WAD);
+        uint128 fyTokenOut = uint128(1e6);
 
         base.mint(address(pool), initialBase);
         vm.expectRevert(bytes("Pool: Too much base token in"));
@@ -296,8 +321,8 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
         uint256 fyTokenBalances = pool.getFYTokenBalance();
         (uint112 baseCachedBefore, uint112 unused1, uint32 unused2) = pool.getCache();
 
-        uint128 fyTokenOut = uint128(WAD);
-        uint128 baseDonation = uint128(WAD);
+        uint128 fyTokenOut = uint128(1e6);
+        uint128 baseDonation = uint128(1e6);
 
         base.mint(address(pool), initialBase + baseDonation);
 
