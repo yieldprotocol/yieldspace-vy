@@ -7,3 +7,6 @@
 [submodule "lib/vault-interfaces.git"]
 	path = lib/vault-interfaces.git
 	url = https://github.com/yieldprotocol/vault-interfaces.git
+[submodule "lib/vault-interfaces"]
+	path = lib/vault-interfaces
+	url = https://github.com/yieldprotocol/vault-interfaces
