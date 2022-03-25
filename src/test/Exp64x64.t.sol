@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.12;
-
+pragma solidity >=0.8.13;/*
+  __     ___      _     _
+  \ \   / (_)    | |   | | ████████╗███████╗███████╗████████╗███████╗
+   \ \_/ / _  ___| | __| | ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
+    \   / | |/ _ \ |/ _` |    ██║   █████╗  ███████╗   ██║   ███████╗
+     | |  | |  __/ | (_| |    ██║   ██╔══╝  ╚════██║   ██║   ╚════██║
+     |_|  |_|\___|_|\__,_|    ██║   ███████╗███████║   ██║   ███████║
+      yieldprotocol.com       ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+*/
 import "ds-test/test.sol";
 
 import "./../contracts/YieldMath.sol";
@@ -10,20 +17,11 @@ import "./helpers.sol";
 contract Exp64x64Test is DSTest {
     /**TESTS*********************************************************
 
-        Tests grouped by function:
-        1.  function pow(int256 x) internal pure returns (int128)
-
         Test name prefixe definitions:
         testUnit_          - Unit tests for common edge cases
         testFail_<reason>_ - Unit tests code reverts appropriately
         testFuzz_          - Property based fuzz tests
         NOTE: These functions are too complex for symbolic execution
-
-        <NAME OF TEST> = <prefix>_<name of function being tested>_<name of library>
-
-        example:
-        testFuzz_someFunc_Exp64x64 = fuzz testing on function named someFunc in Exp64x64
-        testFail_Unauthorized_someFunc_Exp64x64 = test reverts when unauthorized
 
     ****************************************************************/
 

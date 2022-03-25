@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.12;
+pragma solidity >=0.8.13;
 
 import "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 import "forge-std/stdlib.sol";

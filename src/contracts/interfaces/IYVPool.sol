@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.12;
+pragma solidity >=0.8.13;
 import "@yield-protocol/utils-v2/contracts/token/IERC20.sol";
 import "@yield-protocol/utils-v2/contracts/token/IERC2612.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
@@ -34,10 +34,14 @@ interface IYVPool is IERC20, IERC2612 {
     function buyBase(address to, uint128 baseOut, uint128 max) external returns(uint128);
     function sellFYToken(address to, uint128 min) external returns(uint128);
     function buyFYToken(address to, uint128 fyTokenOut, uint128 max) external returns(uint128);
-    function sellBasePreview(uint128 baseIn) external view returns(uint128);
-    function buyBasePreview(uint128 baseOut) external view returns(uint128);
-    function sellFYTokenPreview(uint128 fyTokenIn) external view returns(uint128);
-    function buyFYTokenPreview(uint128 fyTokenOut) external view returns(uint128);
+    function sellBasePreview(uint128 baseIn) external returns(uint128);
+    // function sellBasePreview(uint128 baseIn) external view returns(uint128);
+    function buyBasePreview(uint128 baseOut) external returns(uint128);
+    // function buyBasePreview(uint128 baseOut) external view returns(uint128);
+    function sellFYTokenPreview(uint128 fyTokenIn) external returns(uint128);
+    // function sellFYTokenPreview(uint128 fyTokenIn) external view returns(uint128);
+    function buyFYTokenPreview(uint128 fyTokenOut) external returns(uint128);
+    // function buyFYTokenPreview(uint128 fyTokenOut) external view returns(uint128);
     function mint(address to, address remainder, uint256 minRatio, uint256 maxRatio) external returns (uint256, uint256, uint256);
     function mintWithBase(address to, address remainder, uint256 fyTokenToBuy, uint256 minRatio, uint256 maxRatio) external returns (uint256, uint256, uint256);
     function burn(address baseTo, address fyTokenTo, uint256 minRatio, uint256 maxRatio) external returns (uint256, uint256, uint256);

@@ -1,5 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.12;
+pragma solidity >=0.8.13;/*
+  __     ___      _     _
+  \ \   / (_)    | |   | | ████████╗███████╗███████╗████████╗███████╗
+   \ \_/ / _  ___| | __| | ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
+    \   / | |/ _ \ |/ _` |    ██║   █████╗  ███████╗   ██║   ███████╗
+     | |  | |  __/ | (_| |    ██║   ██╔══╝  ╚════██║   ██║   ╚════██║
+     |_|  |_|\___|_|\__,_|    ██║   ███████╗███████║   ██║   ███████║
+      yieldprotocol.com       ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+*/
 
 import "ds-test/test.sol";
 
@@ -36,9 +44,6 @@ contract YieldMathTest is DSTest {
         testFail_Unauthorized_someFunc_SomeLib = test reverts when unauthorized
 
     ****************************************************************/
-
-    // create an external contract for use with try/catch
-    // ForTesting public forTesting;
 
     uint128 public constant sharesReserves = uint128(1100000 * 10**18); // Z
     uint128 public constant fyTokenReserves = uint128(1500000 * 10**18); // Y
@@ -270,7 +275,6 @@ contract YieldMathTest is DSTest {
     /* 2. function sharesInForFYTokenOut
      *
      ***************************************************************/
-    // NOTE: MATH REVERTS WHEN ALL OF ONE RESOURCE IS DEPLETED
     function testUnit_sharesInForFYTokenOut__baseCases() public {
         // should match Desmos for selected inputs
         uint128[1] memory fyTokenAmounts = [

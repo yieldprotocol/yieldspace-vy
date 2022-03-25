@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.12;
+pragma solidity >=0.8.13;
 
 import "forge-std/stdlib.sol";//
 import {Vm} from "forge-std/Vm.sol";//
@@ -52,8 +52,6 @@ contract Mint__ZeroState is ZeroState {
 
         vm.prank(address(bob));
         pool.mint(address(bob), address(bob), 0, MAX);
-
-        vm.stopPrank();
 
         require(pool.balanceOf(address(bob)) == INITIAL_BASE);
         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();

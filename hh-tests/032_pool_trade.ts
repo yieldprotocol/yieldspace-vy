@@ -77,6 +77,7 @@ describe('Pool - trade', async function () {
   it('sells fyToken', async () => {
     const fyTokenIn = WAD
     const userBaseBefore = await base.balanceOf(user2)
+    console.log("🚀 ~ file: 032_pool_trade.ts ~ line 80 ~ it ~ userBaseBefore", userBaseBefore)
 
     // Transfer fyToken for sale to the pool
     await fyToken.mint(pool.address, fyTokenIn)

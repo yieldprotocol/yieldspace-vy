@@ -1,135 +1,115 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/*
- *  Math 64.64 Smart Contract Library.  Copyright © 2019 by  Consulting.
- * Author: Mikhail Vladimirov <mikhail.vladimirov@gmail.com>
- */
-pragma solidity >=0.8.12;
+pragma solidity >=0.8.13; /*
+  __     ___      _     _
+  \ \   / (_)    | |   | |  ███╗   ███╗ █████╗ ████████╗██╗  ██╗ ██████╗ ██╗  ██╗██╗  ██╗ ██████╗ ██╗  ██╗
+   \ \_/ / _  ___| | __| |  ████╗ ████║██╔══██╗╚══██╔══╝██║  ██║██╔════╝ ██║  ██║╚██╗██╔╝██╔════╝ ██║  ██║
+    \   / | |/ _ \ |/ _` |  ██╔████╔██║███████║   ██║   ███████║███████╗ ███████║ ╚███╔╝ ███████╗ ███████║
+     | |  | |  __/ | (_| |  ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║██╔═══██╗╚════██║ ██╔██╗ ██╔═══██╗╚════██║
+     |_|  |_|\___|_|\__,_|  ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║╚██████╔╝     ██║██╔╝ ██╗╚██████╔╝     ██║
+       yieldprotocol.com    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚═╝╚═╝  ╚═╝ ╚═════╝      ╚═╝
+                            Gas optimized 64.64 math library custom-built by ABDK -- Copyright © 2019 */
 
-/**
- * Smart contract library of mathematical functions operating with signed
- * 64.64-bit fixed point numbers.  Signed 64.64-bit fixed point number is
- * basically a simple fraction whose numerator is signed 128-bit integer and
- * denominator is 2^64.  As long as denominator is always the same, there is no
- * need to store it, thus in Solidity signed 64.64-bit fixed point numbers are
- * represented by int128 type holding only the numerator.
- */
+/// Smart contract library of mathematical functions operating with signed
+/// 64.64-bit fixed point numbers.  Signed 64.64-bit fixed point number is
+/// basically a simple fraction whose numerator is signed 128-bit integer and
+/// denominator is 2^64.  As long as denominator is always the same, there is no
+/// need to store it, thus in Solidity signed 64.64-bit fixed point numbers are
+/// represented by int128 type holding only the numerator.
+/// @title  Math64x64.sol
+/// @author Orignal work by Mikhail Vladimirov. Adapted by devtooligan.
 library Math64x64 {
-    /**
-     * @dev Convert signed 256-bit integer number into signed 64.64-bit fixed point
-     * number.  Revert on overflow.
-     *
-     * @param x signed 256-bit integer number
-     * @return signed 64.64-bit fixed point number
-     */
+    /* CONVERTERS
+    ******************************************************************************************************************/
+
+    /// @dev Convert signed 256-bit integer number into signed 64.64-bit fixed point
+    /// number.  Revert on overflow.
+    /// @param x signed 256-bit integer number
+    /// @return signed 64.64-bit fixed point number
     function fromInt(int256 x) internal pure returns (int128) {
         require(x >= -0x8000000000000000 && x <= 0x7FFFFFFFFFFFFFFF);
         return int128(x << 64);
     }
 
-    /**
-     * @dev Convert signed 64.64 fixed point number into signed 64-bit integer number
-     * rounding down.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64-bit integer number
-     */
+    /// @dev Convert signed 64.64 fixed point number into signed 64-bit integer number
+    /// rounding down.
+    /// @param x signed 64.64-bit fixed point number
+    /// @return signed 64-bit integer number
     function toInt(int128 x) internal pure returns (int64) {
         return int64(x >> 64);
     }
 
-    /**
-     * @dev Convert unsigned 256-bit integer number into signed 64.64-bit fixed point
-     * number.  Revert on overflow.
-     *
-     * @param x unsigned 256-bit integer number
-     * @return signed 64.64-bit fixed point number
-     */
+    /// @dev Convert unsigned 256-bit integer number into signed 64.64-bit fixed point
+    /// number.  Revert on overflow.
+    /// @param x unsigned 256-bit integer number
+    /// @return signed 64.64-bit fixed point number
     function fromUInt(uint256 x) internal pure returns (int128) {
         require(x <= 0x7FFFFFFFFFFFFFFF);
         return int128(uint128(x << 64));
     }
 
-    /**
-     * @dev Convert signed 64.64 fixed point number into unsigned 64-bit integer
-     * number rounding down.  Revert on underflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return unsigned 64-bit integer number
-     */
+    /// @dev Convert signed 64.64 fixed point number into unsigned 64-bit integer
+    /// number rounding down.  Revert on underflow.
+    /// @param x signed 64.64-bit fixed point number
+    /// @return unsigned 64-bit integer number
     function toUInt(int128 x) internal pure returns (uint64) {
         require(x >= 0);
         return uint64(uint128(x >> 64));
     }
 
-    /**
-     * @dev Convert signed 128.128 fixed point number into signed 64.64-bit fixed point
-     * number rounding down.  Revert on overflow.
-     *
-     * @param x signed 128.128-bin fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    /// @dev Convert signed 128.128 fixed point number into signed 64.64-bit fixed point
+    /// number rounding down.  Revert on overflow.
+    /// @param x signed 128.128-bin fixed point number
+    /// @return signed 64.64-bit fixed point number
     function from128x128(int256 x) internal pure returns (int128) {
         int256 result = x >> 64;
         require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
-    /**
-     * @dev Convert signed 64.64 fixed point number into signed 128.128 fixed point
-     * number.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 128.128 fixed point number
-     */
+    /// @dev Convert signed 64.64 fixed point number into signed 128.128 fixed point
+    /// number.
+    /// @param x signed 64.64-bit fixed point number
+    /// @return signed 128.128 fixed point number
     function to128x128(int128 x) internal pure returns (int256) {
         return int256(x) << 64;
     }
 
-    /**
-     * @dev Calculate x + y.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    /* OPERATIONS
+    ******************************************************************************************************************/
+
+    /// @dev Calculate x + y.  Revert on overflow.
+    /// @param x signed 64.64-bit fixed point number
+    /// @param y signed 64.64-bit fixed point number
+    /// @return signed 64.64-bit fixed point number
     function add(int128 x, int128 y) internal pure returns (int128) {
         return x + y;
     }
 
-    /**
-     * @dev Calculate x - y.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    /// @dev Calculate x - y.  Revert on overflow.
+    /// @param x signed 64.64-bit fixed point number
+    /// @param y signed 64.64-bit fixed point number
+    /// @return signed 64.64-bit fixed point number
     function sub(int128 x, int128 y) internal pure returns (int128) {
         int256 result = int256(x) - y;
         require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
-    /**
-     * @dev Calculate x * y rounding down.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate x///y rounding down.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@param y signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function mul(int128 x, int128 y) internal pure returns (int128) {
         int256 result = (int256(x) * y) >> 64;
         require(result >= type(int128).min && result <= type(int128).max);
         return int128(result);
     }
 
-    /**
-     * @dev Calculate x * y rounding towards zero, where x is signed 64.64 fixed point
-     * number and y is signed 256-bit integer number.  Revert on overflow.
-     *
-     * @param x signed 64.64 fixed point number
-     * @param y signed 256-bit integer number
-     * @return signed 256-bit integer number
-     */
+    ///@dev Calculate x * y rounding towards zero, where x is signed 64.64 fixed point
+    ///number and y is signed 256-bit integer number.  Revert on overflow.
+    ///@param x signed 64.64 fixed point number
+    ///@param y signed 256-bit integer number
+    ///@return signed 256-bit integer number
     function muli(int128 x, int256 y) internal pure returns (int256) {
       //NOTE: This reverts if y == type(int128).min
         unchecked {
@@ -167,14 +147,11 @@ library Math64x64 {
         }
     }
 
-    /**
-     * @dev Calculate x * y rounding down, where x is signed 64.64 fixed point number
-     * and y is unsigned 256-bit integer number.  Revert on overflow.
-     *
-     * @param x signed 64.64 fixed point number
-     * @param y unsigned 256-bit integer number
-     * @return unsigned 256-bit integer number
-     */
+    ///@dev Calculate x * y rounding down, where x is signed 64.64 fixed point number
+    ///and y is unsigned 256-bit integer number.  Revert on overflow.
+    ///@param x signed 64.64 fixed point number
+    ///@param y unsigned 256-bit integer number
+    ///@return unsigned 256-bit integer number
     function mulu(int128 x, uint256 y) internal pure returns (uint256) {
         if (y == 0) return 0;
 
@@ -195,14 +172,11 @@ library Math64x64 {
         return hi + lo;
     }
 
-    /**
-     * @dev Calculate x / y rounding towards zero.  Revert on overflow or when y is
-     * zero.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate x / y rounding towards zero.  Revert on overflow or when y is
+    ///zero.
+    ///@param x signed 64.64-bit fixed point number
+    ///@param y signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function div(int128 x, int128 y) internal pure returns (int128) {
         require(y != 0);
         int256 result = (int256(x) << 64) / y;
@@ -210,14 +184,11 @@ library Math64x64 {
         return int128(result);
     }
 
-    /**
-     * @dev Calculate x / y rounding towards zero, where x and y are signed 256-bit
-     * integer numbers.  Revert on overflow or when y is zero.
-     *
-     * @param x signed 256-bit integer number
-     * @param y signed 256-bit integer number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate x / y rounding towards zero, where x and y are signed 256-bit
+    ///integer numbers.  Revert on overflow or when y is zero.
+    ///@param x signed 256-bit integer number
+    ///@param y signed 256-bit integer number
+    ///@return signed 64.64-bit fixed point number
     function divi(int256 x, int256 y) internal pure returns (int128) {
         require(y != 0);
 
@@ -242,14 +213,11 @@ library Math64x64 {
         }
     }
 
-    /**
-     * @dev Calculate x / y rounding towards zero, where x and y are unsigned 256-bit
-     * integer numbers.  Revert on overflow or when y is zero.
-     *
-     * @param x unsigned 256-bit integer number
-     * @param y unsigned 256-bit integer number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate x / y rounding towards zero, where x and y are unsigned 256-bit
+    ///integer numbers.  Revert on overflow or when y is zero.
+    ///@param x unsigned 256-bit integer number
+    ///@param y unsigned 256-bit integer number
+    ///@return signed 64.64-bit fixed point number
     function divu(uint256 x, uint256 y) internal pure returns (int128) {
         require(y != 0);
         uint128 result = divuu(x, y);
@@ -257,35 +225,26 @@ library Math64x64 {
         return int128(result);
     }
 
-    /**
-     * @dev Calculate -x.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate -x.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function neg(int128 x) internal pure returns (int128) {
         require(x != type(int128).min);
         return -x;
     }
 
-    /**
-     * @dev Calculate |x|.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate |x|.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function abs(int128 x) internal pure returns (int128) {
         require(x != type(int128).min);
         return x < 0 ? -x : x;
     }
 
-    /**
-     * @dev Calculate 1 / x rounding towards zero.  Revert on overflow or when x is
-     * zero.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate 1 / x rounding towards zero.  Revert on overflow or when x is
+    ///zero.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function inv(int128 x) internal pure returns (int128) {
         require(x != 0);
         int256 result = int256(0x100000000000000000000000000000000) / x;
@@ -293,25 +252,19 @@ library Math64x64 {
         return int128(result);
     }
 
-    /**
-     * @dev Calculate arithmetics average of x and y, i.e. (x + y) / 2 rounding down.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate arithmetics average of x and y, i.e. (x + y) / 2 rounding down.
+    ///@param x signed 64.64-bit fixed point number
+    ///@param y signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function avg(int128 x, int128 y) internal pure returns (int128) {
         return int128((int256(x) + int256(y)) >> 1);
     }
 
-    /**
-     * @dev Calculate geometric average of x and y, i.e. sqrt (x * y) rounding down.
-     * Revert on overflow or in case x * y is negative.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate geometric average of x and y, i.e. sqrt (x * y) rounding down.
+    ///Revert on overflow or in case x * y is negative.
+    ///@param x signed 64.64-bit fixed point number
+    ///@param y signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function gavg(int128 x, int128 y) internal pure returns (int128) {
         int256 m = int256(x) * int256(y);
         require(m >= 0);
@@ -322,14 +275,11 @@ library Math64x64 {
         return int128(sqrtu(uint256(m), (uint256(uint128(x)) + uint256(uint128(y))) >> 1));
     }
 
-    /**
-     * @dev Calculate x^y assuming 0^0 is 1, where x is signed 64.64 fixed point number
-     * and y is unsigned 256-bit integer number.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @param y uint256 value
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate x^y assuming 0^0 is 1, where x is signed 64.64 fixed point number
+    ///and y is unsigned 256-bit integer number.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@param y uint256 value
+    ///@return signed 64.64-bit fixed point number
     function pow(int128 x, uint256 y) internal pure returns (int128) {
         uint256 absoluteResult;
         bool negativeResult = false;
@@ -354,23 +304,17 @@ library Math64x64 {
         }
     }
 
-    /**
-     * @dev Calculate sqrt (x) rounding down.  Revert if x < 0.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate sqrt (x) rounding down.  Revert if x < 0.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function sqrt(int128 x) internal pure returns (int128) {
         require(x >= 0);
         return int128(sqrtu(uint256(uint128(x)) << 64, 0x10000000000000000));
     }
 
-    /**
-     * @dev Calculate binary logarithm of x.  Revert if x <= 0.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate binary logarithm of x.  Revert if x <= 0.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function log_2(int128 x) internal pure returns (int128) {
         require(x > 0);
 
@@ -414,12 +358,9 @@ library Math64x64 {
         return int128(result);
     }
 
-    /**
-     * @dev Calculate natural logarithm of x.  Revert if x <= 0.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate natural logarithm of x.  Revert if x <= 0.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function ln(int128 x) internal pure returns (int128) {
         require(x > 0);
 
@@ -429,12 +370,9 @@ library Math64x64 {
             ));
     }
 
-    /**
-     * @dev Calculate binary exponent of x.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate binary exponent of x.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function exp_2(int128 x) internal pure returns (int128) {
         require(x < 0x400000000000000000); // Overflow
 
@@ -577,12 +515,9 @@ library Math64x64 {
         return int128(uint128(result));
     }
 
-    /**
-     * @dev Calculate natural exponent of x.  Revert on overflow.
-     *
-     * @param x signed 64.64-bit fixed point number
-     * @return signed 64.64-bit fixed point number
-     */
+    ///@dev Calculate natural exponent of x.  Revert on overflow.
+    ///@param x signed 64.64-bit fixed point number
+    ///@return signed 64.64-bit fixed point number
     function exp(int128 x) internal pure returns (int128) {
         require(x < 0x400000000000000000); // Overflow
 
@@ -594,14 +529,11 @@ library Math64x64 {
             );
     }
 
-    /**
-     * @dev Calculate x / y rounding towards zero, where x and y are unsigned 256-bit
-     * integer numbers.  Revert on overflow or when y is zero.
-     *
-     * @param x unsigned 256-bit integer number
-     * @param y unsigned 256-bit integer number
-     * @return unsigned 64.64-bit fixed point number
-     */
+    ///@dev Calculate x / y rounding towards zero, where x and y are unsigned 256-bit
+    ///integer numbers.  Revert on overflow or when y is zero.
+    ///@param x unsigned 256-bit integer number
+    ///@param y unsigned 256-bit integer number
+    ///@return unsigned 64.64-bit fixed point number
     function divuu(uint256 x, uint256 y) internal pure returns (uint128) {
       // ^^ changed visibility from private to internal for testing
         require(y != 0);
@@ -661,14 +593,11 @@ library Math64x64 {
         return uint128(result);
     }
 
-    /**
-     * @dev Calculate x^y assuming 0^0 is 1, where x is unsigned 129.127 fixed point
-     * number and y is unsigned 256-bit integer number.  Revert on overflow.
-     *
-     * @param x unsigned 129.127-bit fixed point number
-     * @param y uint256 value
-     * @return unsigned 129.127-bit fixed point number
-     */
+    ///@dev Calculate x^y assuming 0^0 is 1, where x is unsigned 129.127 fixed point
+    ///number and y is unsigned 256-bit integer number.  Revert on overflow.
+    ///@param x unsigned 129.127-bit fixed point number
+    ///@param y uint256 value
+    ///@return unsigned 129.127-bit fixed point number
     function powu(uint256 x, uint256 y) internal pure returns (uint256) {
       // ^^ changed visibility from private to internal for testing
         if (y == 0) return 0x80000000000000000000000000000000;
@@ -750,13 +679,10 @@ library Math64x64 {
         }
     }
 
-    /**
-     * @dev Calculate sqrt (x) rounding down, where x is unsigned 256-bit integer
-     * number.
-     *
-     * @param x unsigned 256-bit integer number
-     * @return unsigned 128-bit integer number
-     */
+    ///@dev Calculate sqrt (x) rounding down, where x is unsigned 256-bit integer
+    ///number.
+    ///@param x unsigned 256-bit integer number
+    ///@return unsigned 128-bit integer number
     function sqrtu(uint256 x, uint256 r) internal pure returns (uint128) {
       // ^^ changed visibility from private to internal for testing
         if (x == 0) return 0;
