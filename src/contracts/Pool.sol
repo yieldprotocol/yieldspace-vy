@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.13;/*
+pragma solidity >=0.8.13; /*
   __     ___      _     _
   \ \   / (_)    | |   | |  ██████╗  ██████╗  ██████╗ ██╗        ███████╗ ██████╗ ██╗
    \ \_/ / _  ___| | __| |  ██╔══██╗██╔═══██╗██╔═══██╗██║        ██╔════╝██╔═══██╗██║
@@ -31,40 +31,40 @@ import {YieldMath} from "./YieldMath.sol";
 // import {console} from "forge-std/console.sol"; // TODO: DELETEME!!!
 
 /*
-                                                    ┌─────────┐
-      ┌────────────────────────────────┐            │no       │
-      │                                │            │lifeguard│
-      │  Mint. GM!                     │            └─┬─────┬─┘       ==+
-      │  Buy, sell, buy, sell -- stop. │              │     │    =======+
-      │  Burn! GG.                     │         _____│_____│______    |+
-      │                                │     .-'"___________________`-.|+
-      │  "Watashinojinsei"             │ -  ( .'"                   '-.)+
-      │  a haiku by Poolie             │    |`-..__________________..-'|+
-      │                                │    |                          |+
-      └────────────────────────────────┘    |                          |+
-                    _......._             /`|       ---     ---        |+
-                 .-:::::::::::-.         / /|       (O )    (O )       |+
-               .:::::::::::::::::.      / / |                          |+
-              :  _______  __   __ : _.-" ;  |            [             |+
-             :: |       ||  | |  |::),.-'   |        ----------        |+
-            ::: |    ___||  |_|  |:::/      \        \________/        /+
-            ::: |   |___ |       |:::        `-..__________________..-' +=
-            ::: |    ___||_     _|:::               |    | |    |
-            ::: |   |      |   |  :::               |    | |    |
-             :: |___|      |___|  ::                |    | |    |
-              :       TOKEN       :                 T----T T----T
-               `:::::::::::::::::'             _..._L____J L____J _..._
-                 `-:::::::::::-'             .` "-. `%   | |    %` .-" `.
-                    `'''''''`               /      \    .: :.     /      \
-                                            '-..___|_..=:` `-:=.._|___..-'
-
-*/
+                                              ┌─────────┐
+                                              │no       │
+                     Hi Fren,  I'm Poolie!    │lifeguard│
+                                              └─┬─────┬─┘       ==+
+         ┌──────────────┐             \         │     │    =======+
+         │$            $│                  _____│_____│______    |+
+         │ ┌────────────┴─┐            .-'"___________________`-.|+
+         │ │$            $│           ( .'"                   '-.)+
+         │$│ ┌────────────┴─┐         |`-..__________________..-'|+
+         └─┤ │$            $│         |                          |+
+           │$│    SHARES    │         |                          |+
+           └─┤              │         |       ---     ---        |+
+             │$            $│         |       (O )    (O )       |+
+             └──────────────┘       /`|                          |+
+           .-:::::::::::-.         / /|            [             |+
+         .:::::::::::::::::.      / / |        ----------        |+
+        :  _______  __   __ : _.-" ;  \        \________/        /+
+       :: |       ||  | |  |::),.-'    `-..__________________..-' +=
+      ::: |    ___||  |_|  |:::/              |    | |    |
+      ::: |   |___ |       |:::               |    | |    |
+      ::: |    ___||_     _|:::               |    | |    |
+      ::: |   |      |   |  :::               T----T T----T
+       :: |___|      |___|  ::           _..._L____J L____J _..._
+        :       TOKEN       :          .` "-. `%   | |    %` .-" `.
+         `:::::::::::::::::'          /      \    .: :.     /      \
+           `-:::::::::::-'            '-..___|_..=:` `-:=.._|___..-'
+              `'''''''`                                              */
 /// A Yieldspace AMM implementation for pools providing liquidity for Yield bearing vault shares and fyTokens.
 /// https://yield.is/YieldSpace.pdf
 /// @title  Pool.sol
 /// @dev Instantiate pool with Yearn token and associated fyToken. Uses 64.64 bit math under the hood for precision and reduced gas usage.
 /// @author Orignal work by alcueca. Adapted by devtooligan
 contract Pool is IYVPool, ERC20Permit {
+
     using CastU256U128 for uint256;
     using CastU256U112 for uint256;
     using CastU256I256 for uint256;
@@ -88,24 +88,22 @@ contract Pool is IYVPool, ERC20Permit {
     );
     event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
 
-    int128 public immutable mu; // The normalization coefficient -- which is the initial c value
-    int128 public immutable override ts; // 1 / Seconds in 10 years, in 64.64
-    int128 public immutable override g1; // To be used when selling base to the pool
-    int128 public immutable override g2; // To be used when selling fyToken to the pool
+    int128 public immutable mu; //                   The normalization coefficient -- which is the initial c value
+    int128 public immutable override ts; //          1 / Seconds in 10 years, in 64.64
+    int128 public immutable override g1; //          To be used when selling base to the pool
+    int128 public immutable override g2; //          To be used when selling fyToken to the pool
     uint32 public immutable override maturity;
     uint96 public immutable override scaleFactor; // Scale up to 18 low decimal tokens to get the right precision in YieldMath
 
     IYVToken public immutable override base;
     IFYToken public immutable override fyToken;
 
-    uint112 private baseCached; // uses single storage slot, accessible via getCache
-    uint112 private fyTokenCached; // uses single storage slot, accessible via getCache
-    uint32 private blockTimestampLast; // uses single storage slot, accessible via getCache
+    uint112 private baseCached; //                   uses single storage slot, accessible via getCache
+    uint112 private fyTokenCached; //                uses single storage slot, accessible via getCache
+    uint32 private blockTimestampLast; //            uses single storage slot, accessible via getCache
 
-    uint256 public cumulativeBalancesRatio; // Fixed point factor with 27 decimals (ray)
+    uint256 public cumulativeBalancesRatio; //       Fixed point factor with 27 decimals (ray)
 
-    /// @dev Deploy a Pool.
-    /// Make sure that the fyToken follows ERC20 standards with regards to name, symbol and decimals
     constructor(
         address base_,
         address fyToken_,
@@ -142,7 +140,19 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /* Balances management
-    ******************************************************************************************************************/
+                  _____________________________________
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   ||_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_||
+                   || | | | | | | | | | | | | | | | ||
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                  _|o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o|_
+                                        "Abacus" - ejm
+
+     ******************************************************************************************************************/
 
     /// @dev Returns the cached balances & last updated timestamp.
     /// @return Cached base token balance.
@@ -235,9 +245,37 @@ contract Pool is IYVPool, ERC20Permit {
         emit Sync(baseCached, fyTokenCached, cumulativeBalancesRatio_);
     }
 
-    /* Liquidity
-    ******************************************************************************************************************/
+    /* Liquidity Functions
 
+       ┌────────────────────────────────┐
+       │  Mint. GM!                     │
+       │  Buy, sell, sell, buy -- stop  │
+       │  Burn. GG.                     │
+       │                                │
+       │  "Watashinojinsei"             │
+       │  a haiku by Poolie             │
+       └────────────────────────────────┘
+
+     ******************************************************************************************************************/
+
+    /*
+                                                                                              v
+          _                                                                            \            /
+         |_ \_/                   ┌───────────────────────────────┐
+         |   |                    │                               │                 `    _......._     '
+                                 \│                               │/                  .-:::::::::::-.
+           │                     \│                               │/             `   :    __    ____ :   /
+           └───────────────►      │            mint               │                 ::   / /   / __ \::
+                                  │                               │  ──────▶    _   ::  / /   / /_/ /::   _
+           ┌───────────────►      │                               │                 :: / /___/ ____/ ::
+           │                     /│                               │\                ::/_____/_/      ::
+                                 /│                               │\             '   :               :   `
+        B A S E                   │                      \(^o^)/  │                   `-:::::::::::-'
+                                  │                     Pool.sol  │                 ,    `'''''''`     .
+                                  └───────────────────────────────┘
+                                                                                       /            \
+                                                                                              ^
+    */
     /// @dev Mint liquidity tokens in exchange for adding base and fyToken
     /// The amount of liquidity tokens to mint is calculated from the amount of unaccounted for fyToken in this contract.
     /// A proportional amount of base tokens need to be present in this contract, also unaccounted for.
@@ -263,6 +301,22 @@ contract Pool is IYVPool, ERC20Permit {
         return _mintInternal(to, remainder, 0, minRatio, maxRatio);
     }
 
+    /*
+                                                                                                    V
+                                         ┌───────────────────────────────┐                   \            /
+                                         │                               │                 `    _......._     '
+                                        \│                               │/                  .-:::::::::::-.
+                                        \│                               │/             `   :    __    ____ :   /
+                                         │         mintWithBase          │                 ::   / /   / __ \::
+               B A S E      ──────►      │                               │  ──────▶    _   ::  / /   / /_/ /::   _
+                                         │                               │                 :: / /___/ ____/ ::
+                                        /│                               │\                ::/_____/_/      ::
+                                        /│                               │\             '   :               :   `
+                                         │                      \(^o^)/  │                   `-:::::::::::-'
+                                         │                     Pool.sol  │                 ,    `'''''''`     .
+                                         └───────────────────────────────┘                    /           \
+                                                                                                   ^
+    */
     /// @dev Mint liquidity tokens in exchange for adding only base
     /// The amount of liquidity tokens is calculated from the amount of fyToken to buy from the pool,
     /// plus the amount of unaccounted for fyToken in this contract.
@@ -335,6 +389,7 @@ contract Pool is IYVPool, ERC20Permit {
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
+            //todo: set mu here
         } else if (_realFYTokenCached == 0) {
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;
@@ -378,6 +433,22 @@ contract Pool is IYVPool, ERC20Permit {
         );
     }
 
+    /* burn
+                                (    (
+                                )    (
+                           (  (|   (|  )
+                         )   )\/ ( \/(( (                  _
+                        ((  /     ))\))))\      ┌──────►  |_ \_/
+                         )\(          |  )      │         |   |
+                        /:  | __    ____/:      │
+                        ::   / /   / __ \::  ───┤
+                        ::  / /   / /_/ /::     │
+                        :: / /___/ ____/ ::     └──────►  B A S E
+                        ::/_____/_/      ::
+                         :               :
+                          `-:::::::::::-'
+                             `'''''''`
+    */
     /// @dev Burn liquidity tokens in exchange for base and fyToken.
     /// The liquidity tokens need to be in this contract.
     /// @param baseTo Wallet receiving the base.
@@ -402,6 +473,23 @@ contract Pool is IYVPool, ERC20Permit {
         return _burnInternal(baseTo, fyTokenTo, false, minRatio, maxRatio);
     }
 
+    /* burnForBase
+
+                                 (    (
+                                )    (
+                            (  (|   (|  )
+                         )   )\/ ( \/(( (
+                         ((  /     ))\))))\
+                          )\(          |  )
+                        /:  | __    ____/:
+                        ::   / /   / __ \::    ──────────►   B A S E
+                        ::  / /   / /_/ /::
+                        :: / /___/ ____/ ::
+                        ::/_____/_/      ::
+                         :               :
+                          `-:::::::::::-'
+                             `'''''''`
+    */
     /// @dev Burn liquidity tokens in exchange for base.
     /// The liquidity provider needs to have called `pool.approve`.
     /// @param to Wallet receiving the base and fyToken.
@@ -461,11 +549,11 @@ contract Pool is IYVPool, ERC20Permit {
 
         if (tradeToBase) {
             tokenOut +=
-                YieldMath.sharesOutForFYTokenIn( // This is a virtual sell
-                    (_baseCached - tokenOut.u128()) * scaleFactor, // Cache, minus virtual burn
+                YieldMath.sharesOutForFYTokenIn( //                         This is a virtual sell
+                    (_baseCached - tokenOut.u128()) * scaleFactor, //      Cache, minus virtual burn
                     (_fyTokenCached - fyTokenOut.u128()) * scaleFactor, // Cache, minus virtual burn
-                    fyTokenOut.u128() * scaleFactor, // Sell the virtual fyToken obtained
-                    maturity - uint32(block.timestamp), // This can't be called after maturity
+                    fyTokenOut.u128() * scaleFactor, //                    Sell the virtual fyToken obtained
+                    maturity - uint32(block.timestamp), //                  This can't be called after maturity
                     ts,
                     g2,
                     _getC(),
@@ -474,7 +562,7 @@ contract Pool is IYVPool, ERC20Permit {
                 scaleFactor;
             fyTokenOut = 0;
         }
-
+ d
         // Update TWAR
         _update(
             (_baseCached - tokenOut).u128(),
@@ -499,8 +587,10 @@ contract Pool is IYVPool, ERC20Permit {
         );
     }
 
-    /* Trading
-    ****************************************************************************************************************//**
+    /* Trading Functions
+     ****************************************************************************************************************/
+
+    /* sellBase
 
                          I've transfered you some base.
              _______     Can you swap them for fyTokens?
@@ -579,7 +669,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint112 baseBalance,
         uint112 fyTokenBalance
     ) private beforeMaturity returns (uint128) {
-    // ) private view beforeMaturity returns (uint128) {
+        // ) private view beforeMaturity returns (uint128) {
         uint128 fyTokenOut = YieldMath.fyTokenOutForSharesIn(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
@@ -596,7 +686,7 @@ contract Pool is IYVPool, ERC20Permit {
         return fyTokenOut;
     }
 
-/**
+    /* buyBase
 
                          I've approved some fyTokens for you.
              _______     Can you swap them for `tokenOut` base?
@@ -608,7 +698,7 @@ contract Pool is IYVPool, ERC20Permit {
         \  \   \ == /      ::: |    ___||_     _|:::    Ok fren!     │     │    =======+
          \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
           \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
-           \            \    :    `tokenOut`    :         ( .'"                   '-.)+
+           \            \    :        ????       :         ( .'"                   '-.)+
             --|  GUY |\_/\  / `:::::::::::::::::'          |`-..__________________..-'|+
               |      | \  \/ /  `-:::::::::::-'            |                          |+
               |      |  \   /      `'''''''`               |                          |+
@@ -617,7 +707,7 @@ contract Pool is IYVPool, ERC20Permit {
               |__X___|             ┌──────────────┐      /`|                          |+
               |      |             │$            $│     / /|            [             |+
               |  |   |             │   B A S E    │    / / |        ----------        |+
-              |  |  _|             │    ?????     │\.-" ;  \        \________/        /+
+              |  |  _|             │  `tokenOut`  │\.-" ;  \        \________/        /+
               |  |  |              │$            $│),.-'    `-..__________________..-' +=
               |  |  |              └──────────────┘                |    | |    |
               (  (  |                                              |    | |    |
@@ -662,7 +752,7 @@ contract Pool is IYVPool, ERC20Permit {
     /// @param tokenOut Amount of base hypothetically desired.
     /// @return Amount of fyToken hypothetically required.
     // function buyBasePreview(uint128 tokenOut) external view override returns (uint128) {
-    function buyBasePreview(uint128 tokenOut) external  override returns (uint128) {
+    function buyBasePreview(uint128 tokenOut) external override returns (uint128) {
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _buyBasePreview(tokenOut, _baseCached, _fyTokenCached);
     }
@@ -673,7 +763,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint112 baseBalance,
         uint112 fyTokenBalance
     ) private beforeMaturity returns (uint128) {
-    // ) private view beforeMaturity returns (uint128) {
+        // ) private view beforeMaturity returns (uint128) {
         return
             YieldMath.fyTokenInForSharesOut(
                 baseBalance * scaleFactor,
@@ -687,7 +777,7 @@ contract Pool is IYVPool, ERC20Permit {
             ) / scaleFactor;
     }
 
-/**
+    /*sellFYToken
                          I've transferred you some fyTokens.
              _______     Can you swap them for base?
             /   GUY \         .:::::::::::::::::.
@@ -717,7 +807,7 @@ contract Pool is IYVPool, ERC20Permit {
             (_____[__)                                      .` "-. `%   | |    %` .-" `.
                                                            /      \    .: :.     /      \
                                                            '-..___|_..=:` `-:=.._|___..-'
- */ d
+ */
     /// @dev Sell fyToken for base
     /// The trader needs to have transferred the amount of fyToken to sell to the pool before in the same transaction.
     /// @param to Wallet receiving the base being bought
@@ -780,8 +870,8 @@ contract Pool is IYVPool, ERC20Permit {
             ) / scaleFactor;
     }
 
+    /*buyFYToken
 
-/**
                          I've approved some base for you.
              _______     Can you swap them for `fyTokenOut`?
             /   GUY \                                                 ┌─────────┐
