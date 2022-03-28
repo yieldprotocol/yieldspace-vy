@@ -150,7 +150,7 @@ contract Pool is IYVPool, ERC20Permit {
                    |o o o o o o o o o o o o o o o o o|
                    |o o o o o o o o o o o o o o o o o|
                   _|o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o|_
-                                        "Abacus" - ejm
+                               "Poolie's Abacus" - ejm
 
      ******************************************************************************************************************/
 
@@ -247,22 +247,22 @@ contract Pool is IYVPool, ERC20Permit {
 
     /* Liquidity Functions
 
-       ┌────────────────────────────────┐
-       │  Mint. GM!                     │
-       │  Buy, sell, sell, buy -- stop  │
-       │  Burn. GG.                     │
-       │                                │
-       │  "Watashinojinsei"             │
-       │  a haiku by Poolie             │
-       └────────────────────────────────┘
+        ┌────────────────────────────────┐
+        │  Mint. GM!                     │
+        │  Buy, sell, sell, buy -- stop  │
+        │  Burn. GG.                     │
+        │                                │
+        │  "Watashinojinsei"             │
+        │  a haiku by Poolie             │
+        └────────────────────────────────┘
 
      ******************************************************************************************************************/
 
     /*
                                                                                               v
-          _                                                                            \            /
+         ___                                                                            \            /
          |_ \_/                   ┌───────────────────────────────┐
-         |   |                    │                               │                 `    _......._     '
+         |   |                    │                               │                 `    _......._     '   GM!
                                  \│                               │/                  .-:::::::::::-.
            │                     \│                               │/             `   :    __    ____ :   /
            └───────────────►      │            mint               │                 ::   / /   / __ \::
@@ -270,7 +270,7 @@ contract Pool is IYVPool, ERC20Permit {
            ┌───────────────►      │                               │                 :: / /___/ ____/ ::
            │                     /│                               │\                ::/_____/_/      ::
                                  /│                               │\             '   :               :   `
-        B A S E                   │                      \(^o^)/  │                   `-:::::::::::-'
+         B A S E                  │                      \(^o^)/  │                   `-:::::::::::-'
                                   │                     Pool.sol  │                 ,    `'''''''`     .
                                   └───────────────────────────────┘
                                                                                        /            \
@@ -302,20 +302,20 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /*
-                                                                                                    V
-                                         ┌───────────────────────────────┐                   \            /
-                                         │                               │                 `    _......._     '
-                                        \│                               │/                  .-:::::::::::-.
-                                        \│                               │/             `   :    __    ____ :   /
-                                         │         mintWithBase          │                 ::   / /   / __ \::
-               B A S E      ──────►      │                               │  ──────▶    _   ::  / /   / /_/ /::   _
-                                         │                               │                 :: / /___/ ____/ ::
-                                        /│                               │\                ::/_____/_/      ::
-                                        /│                               │\             '   :               :   `
-                                         │                      \(^o^)/  │                   `-:::::::::::-'
-                                         │                     Pool.sol  │                 ,    `'''''''`     .
-                                         └───────────────────────────────┘                    /           \
-                                                                                                   ^
+                                                                                             V
+                                  ┌───────────────────────────────┐                   \            /
+                                  │                               │                 `    _......._     '   GM!
+                                 \│                               │/                  .-:::::::::::-.
+                                 \│                               │/             `   :    __    ____ :   /
+                                  │         mintWithBase          │                 ::   / /   / __ \::
+         B A S E     ──────►      │                               │  ──────▶    _   ::  / /   / /_/ /::   _
+                                  │                               │                 :: / /___/ ____/ ::
+                                 /│                               │\                ::/_____/_/      ::
+                                 /│                               │\             '   :               :   `
+                                  │                      \(^o^)/  │                   `-:::::::::::-'
+                                  │                     Pool.sol  │                 ,    `'''''''`     .
+                                  └───────────────────────────────┘                    /           \
+                                                                                            ^
     */
     /// @dev Mint liquidity tokens in exchange for adding only base
     /// The amount of liquidity tokens is calculated from the amount of fyToken to buy from the pool,
@@ -437,7 +437,7 @@ contract Pool is IYVPool, ERC20Permit {
                                 (    (
                                 )    (
                            (  (|   (|  )
-                         )   )\/ ( \/(( (                  _
+                gg      )   )\/ ( \/(( (                  ___
                         ((  /     ))\))))\      ┌──────►  |_ \_/
                          )\(          |  )      │         |   |
                         /:  | __    ____/:      │
@@ -478,7 +478,7 @@ contract Pool is IYVPool, ERC20Permit {
                                  (    (
                                 )    (
                             (  (|   (|  )
-                         )   )\/ ( \/(( (
+                gg       )   )\/ ( \/(( (
                          ((  /     ))\))))\
                           )\(          |  )
                         /:  | __    ____/:
@@ -592,7 +592,7 @@ contract Pool is IYVPool, ERC20Permit {
 
     /* sellBase
 
-                         I've transfered you some base.
+                         I've transfered you `uint128 baseIn` worth of base tokens.
              _______     Can you swap them for fyTokens?
             /   GUY \                                                 ┌─────────┐
      (^^^|   \===========  ┌──────────────┐                           │no       │
@@ -688,8 +688,8 @@ contract Pool is IYVPool, ERC20Permit {
 
     /* buyBase
 
-                         I've approved some fyTokens for you.
-             _______     Can you swap them for `tokenOut` base?
+                         I want `uint128 tokenOut` worth of base tokens.
+             _______     I've approved fyTokens for you to take what you need for the swap.
             /   GUY \         .:::::::::::::::::.
      (^^^|   \===========    :  _______  __   __ :                 ┌─────────┐
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
@@ -778,8 +778,8 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /*sellFYToken
-                         I've transferred you some fyTokens.
-             _______     Can you swap them for base?
+                         I've transferred you `uint128 fyTokenIn` worth of fyTokens.
+             _______     Can you swap them for base tokens?
             /   GUY \         .:::::::::::::::::.
      (^^^|   \===========    :  _______  __   __ :                 ┌─────────┐
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
@@ -872,8 +872,8 @@ contract Pool is IYVPool, ERC20Permit {
 
     /*buyFYToken
 
-                         I've approved some base for you.
-             _______     Can you swap them for `fyTokenOut`?
+                         I want `uint128 fyTokenOut` worth of fyTokens.
+             _______     I've approved base for you to take what you need for the swap.
             /   GUY \                                                 ┌─────────┐
      (^^^|   \===========  ┌──────────────┐                           │no       │
       \(\/    | _  _ |     │$            $│                           │lifeguard│
