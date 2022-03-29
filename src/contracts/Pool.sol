@@ -28,8 +28,6 @@ import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
-// import {console} from "forge-std/console.sol"; // TODO: DELETEME!!!
-
 /*
                                               ┌─────────┐
                                               │no       │
@@ -64,7 +62,6 @@ import {YieldMath} from "./YieldMath.sol";
 /// @dev Instantiate pool with Yearn token and associated fyToken. Uses 64.64 bit math under the hood for precision and reduced gas usage.
 /// @author Orignal work by alcueca. Adapted by devtooligan
 contract Pool is IYVPool, ERC20Permit {
-
     using CastU256U128 for uint256;
     using CastU256U112 for uint256;
     using CastU256I256 for uint256;
@@ -139,7 +136,7 @@ contract Pool is IYVPool, ERC20Permit {
         _;
     }
 
-    /* Balances management
+    /* BALANCE MANAGEMENT
                   _____________________________________
                    |o o o o o o o o o o o o o o o o o|
                    |o o o o o o o o o o o o o o o o o|
@@ -245,7 +242,7 @@ contract Pool is IYVPool, ERC20Permit {
         emit Sync(baseCached, fyTokenCached, cumulativeBalancesRatio_);
     }
 
-    /* Liquidity Functions
+    /* LIQUIDITY FUNCTIONS
 
         ┌────────────────────────────────┐
         │  Mint. GM!                     │
@@ -434,10 +431,10 @@ contract Pool is IYVPool, ERC20Permit {
     }
 
     /* burn
-                                (    (
+                                (   (
                                 )    (
                            (  (|   (|  )
-                gg      )   )\/ ( \/(( (                  ___
+                        )   )\/ ( \/(( (                  ___
                         ((  /     ))\))))\      ┌──────►  |_ \_/
                          )\(          |  )      │         |   |
                         /:  | __    ____/:      │
@@ -475,10 +472,10 @@ contract Pool is IYVPool, ERC20Permit {
 
     /* burnForBase
 
-                                 (    (
+                                (   (
                                 )    (
                             (  (|   (|  )
-                gg       )   )\/ ( \/(( (
+                         )   )\/ ( \/(( (
                          ((  /     ))\))))\
                           )\(          |  )
                         /:  | __    ____/:
@@ -562,7 +559,7 @@ contract Pool is IYVPool, ERC20Permit {
                 scaleFactor;
             fyTokenOut = 0;
         }
- d
+
         // Update TWAR
         _update(
             (_baseCached - tokenOut).u128(),
@@ -587,18 +584,18 @@ contract Pool is IYVPool, ERC20Permit {
         );
     }
 
-    /* Trading Functions
+    /* TRADING FUNCTIONS
      ****************************************************************************************************************/
 
     /* sellBase
 
-                         I've transfered you `uint128 baseIn` worth of base tokens.
+                         I've transfered you `uint128 baseIn` worth of base.
              _______     Can you swap them for fyTokens?
             /   GUY \                                                 ┌─────────┐
      (^^^|   \===========  ┌──────────────┐                           │no       │
       \(\/    | _  _ |     │$            $│                           │lifeguard│
        \ \   (. o  o |     │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
-        \ \   |   ~  |     │ │$            $│    hmm, let's see here    │     │    =======+
+        \ \   |   ~  |     │ │$            $│    Hmm, let's see here    │     │    =======+
         \  \   \ == /      │ │              │                      _____│_____│______    |+
          \  \___|  |___    │$│   `baseIn`   │                  .-'"___________________`-.|+
           \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+
@@ -629,16 +626,9 @@ contract Pool is IYVPool, ERC20Permit {
     function sellBase(address to, uint128 min) external override returns (uint128) {
         // Calculate trade
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
-        // console.log("Pool.sol ~ line 500 ~ sellBase ~ _fyTokenCached", _fyTokenCached);
-        // console.log("Pool.sol ~ line 499 ~ sellBase ~ _baseCached", _baseCached);
-
         uint112 _baseBalance = _getBaseBalance();
-        // console.log("Pool.sol ~ line 537 ~ sellBase ~ _baseBalance", _baseBalance);
-
         uint112 _fyTokenBalance = _getFYTokenBalance();
         uint128 baseIn = _baseBalance - _baseCached;
-        // console.log("Pool.sol ~ line 540 ~ sellBase ~ baseIn", baseIn);
-
         uint128 fyTokenOut = _sellBasePreview(baseIn, _baseCached, _fyTokenBalance);
 
         // Slippage check
@@ -695,7 +685,7 @@ contract Pool is IYVPool, ERC20Permit {
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
        \ \   (. o  o |     ::: |    ___||  |_|  |:::               │lifeguard│
         \ \   |   ~  |     ::: |   |___ |       |:::               └─┬─────┬─┘       ==+
-        \  \   \ == /      ::: |    ___||_     _|:::    Ok fren!     │     │    =======+
+        \  \   \ == /      ::: |    ___||_     _|:::    Let's go!    │     │    =======+
          \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
           \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
            \            \    :        ????       :         ( .'"                   '-.)+
@@ -779,13 +769,13 @@ contract Pool is IYVPool, ERC20Permit {
 
     /*sellFYToken
                          I've transferred you `uint128 fyTokenIn` worth of fyTokens.
-             _______     Can you swap them for base tokens?
+             _______     Can you swap them for base?
             /   GUY \         .:::::::::::::::::.
      (^^^|   \===========    :  _______  __   __ :                 ┌─────────┐
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
        \ \   (. o  o |     ::: |    ___||  |_|  |:::               │lifeguard│
         \ \   |   ~  |     ::: |   |___ |       |:::               └─┬─────┬─┘       ==+
-        \  \   \ == /      ::: |    ___||_     _|:::   I think so    │     │    =======+
+        \  \   \ == /      ::: |    ___||_     _|:::   I think so.   │     │    =======+
          \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
           \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
            \            \    :     `fyTokenIn`   :         ( .'"                   '-.)+
@@ -814,29 +804,22 @@ contract Pool is IYVPool, ERC20Permit {
     /// @param min Minimum accepted amount of base
     /// @return Amount of base that will be deposited on `to` wallet
     function sellFYToken(address to, uint128 min) external override returns (uint128) {
-        // console.log(1);
         // Calculate trade
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
-        // console.log(2);
         uint112 _fyTokenBalance = _getFYTokenBalance();
         uint112 _baseBalance = _getBaseBalance();
         uint128 fyTokenIn = _fyTokenBalance - _fyTokenCached;
-        // console.log(3);
         uint128 baseOut = _sellFYTokenPreview(fyTokenIn, _baseCached, _fyTokenCached);
 
-        // console.log(4);
         // Slippage check
         require(baseOut >= min, "Pool: Not enough base obtained");
 
-        // console.log(5);
         // Update TWAR
         _update(_baseBalance - baseOut, _fyTokenBalance, _baseCached, _fyTokenCached);
 
-        // console.log(6);
         // Transfer assets
         base.safeTransfer(to, baseOut);
 
-        // console.log(7);
         emit Trade(maturity, msg.sender, to, baseOut.i128(), -(fyTokenIn.i128()));
         return baseOut;
     }
@@ -856,7 +839,6 @@ contract Pool is IYVPool, ERC20Permit {
         uint112 fyTokenBalance
     ) public beforeMaturity returns (uint128) {
         // ) private view beforeMaturity returns (uint128) {  // todo: use this but consider changing to public for tests
-        // console.log('sfytprev1');
         return
             YieldMath.sharesOutForFYTokenIn(
                 baseBalance * scaleFactor,
@@ -878,7 +860,7 @@ contract Pool is IYVPool, ERC20Permit {
      (^^^|   \===========  ┌──────────────┐                           │no       │
       \(\/    | _  _ |     │$            $│                           │lifeguard│
        \ \   (. o  o |     │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
-        \ \   |   ~  |     │ │$            $│           Let's do it!    │     │    =======+
+        \ \   |   ~  |     │ │$            $│           Ok, Guy!        │     │    =======+
         \  \   \ == /      │ │   B A S E    │                      _____│_____│______    |+
          \  \___|  |___    │$│    ????      │                  .-'"___________________`-.|+
           \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+

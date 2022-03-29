@@ -124,28 +124,28 @@ contract YieldMathTest is DSTest {
                 ) /
                 10**18;
 
-            (
-                uint256 normalizedSharesReserves,
-                uint256 ya,
-                uint128 sharesReserves_,
-                uint128 fyTokenReserves_
-            ) = YieldMath.fyTokenOutForSharesInDebug(
-                    sharesReserves,
-                    fyTokenReserves,
-                    sharesAmounts[idx], // x or ΔZ
-                    timeTillMaturity,
-                    k,
-                    g1,
-                    c,
-                    mu
-                );
-            emit log_named_uint("normalizedSharesReserves", normalizedSharesReserves);
-            emit log_named_uint("ya", ya);
-            emit log_named_uint("sharesReserves_", sharesReserves_);
-            emit log_named_uint("fyTokenReserves", fyTokenReserves);
-            emit log_named_uint("fyTokenReserves", fyTokenReserves_);
-            emit log_named_uint("result", result);
-            emit log_named_uint("expectedResult", expectedResults[idx]);
+            // (
+            //     uint256 normalizedSharesReserves,
+            //     uint256 ya,
+            //     uint128 sharesReserves_,
+            //     uint128 fyTokenReserves_
+            // ) = YieldMath.fyTokenOutForSharesInDebug(
+            //         sharesReserves,
+            //         fyTokenReserves,
+            //         sharesAmounts[idx], // x or ΔZ
+            //         timeTillMaturity,
+            //         k,
+            //         g1,
+            //         c,
+            //         mu
+            //     );
+            // emit log_named_uint("normalizedSharesReserves", normalizedSharesReserves);
+            // emit log_named_uint("ya", ya);
+            // emit log_named_uint("sharesReserves_", sharesReserves_);
+            // emit log_named_uint("fyTokenReserves", fyTokenReserves);
+            // emit log_named_uint("fyTokenReserves", fyTokenReserves_);
+            // emit log_named_uint("result", result);
+            // emit log_named_uint("expectedResult", expectedResults[idx]);
 
             // When rounding should round in favor of the pool
             assertSameOrSlightlyLess(result, expectedResults[idx]);
