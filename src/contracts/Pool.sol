@@ -22,41 +22,43 @@ import "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol";
 import "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol";
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 
-import {IYVToken} from "./interfaces/IYVToken.sol";
+import "src/contracts/interfaces/IYVToken.sol";
 import {IYVPool} from "./interfaces/IYVPool.sol";
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
 /*
-                                              ┌─────────┐
-                                              │no       │
-                     Hi Fren,  I'm Poolie!    │lifeguard│
-                                              └─┬─────┬─┘       ==+
-         ┌──────────────┐             \         │     │    =======+
-         │$            $│                  _____│_____│______    |+
-         │ ┌────────────┴─┐            .-'"___________________`-.|+
-         │ │$            $│           ( .'"                   '-.)+
-         │$│ ┌────────────┴─┐         |`-..__________________..-'|+
-         └─┤ │$            $│         |                          |+
-           │$│    SHARES    │         |                          |+
-           └─┤              │         |       ---     ---        |+
-             │$            $│         |       (O )    (O )       |+
-             └──────────────┘       /`|                          |+
-           .-:::::::::::-.         / /|            [             |+
-         .:::::::::::::::::.      / / |        ----------        |+
-        :  _______  __   __ : _.-" ;  \        \________/        /+
-       :: |       ||  | |  |::),.-'    `-..__________________..-' +=
-      ::: |    ___||  |_|  |:::/              |    | |    |
-      ::: |   |___ |       |:::               |    | |    |
-      ::: |    ___||_     _|:::               |    | |    |
-      ::: |   |      |   |  :::               T----T T----T
-       :: |___|      |___|  ::           _..._L____J L____J _..._
-        :       TOKEN       :          .` "-. `%   | |    %` .-" `.
-         `:::::::::::::::::'          /      \    .: :.     /      \
-           `-:::::::::::-'            '-..___|_..=:` `-:=.._|___..-'
-              `'''''''`                                              */
-/// A Yieldspace AMM implementation for pools providing liquidity for Yield bearing vault shares and fyTokens.
+
+                                                ┌─────────┐
+                                                │no       │
+                                                │lifeguard│
+                                                └─┬─────┬─┘       ==+
+                          I'm Poolie!             │     │    =======+
+                                             _____│_____│______    |+
+                                      \  .-'"___________________`-.|+
+                                        ( .'"                   '-.)+
+                                        |`-..__________________..-'|+
+                                        |                          |+
+             .-:::::::::::-.            |                          |+      ┌──────────────┐
+           .:::::::::::::::::.          |         ---  ---         |+      │$            $│
+          :  _______  __   __ :        .|         (o)  (o)         |+.     │ ┌────────────┴─┐
+         :: |       ||  | |  |::      /`|                          |+'\    │ │$            $│
+        ::: |    ___||  |_|  |:::    / /|            [             |+\ \   │$│ ┌────────────┴─┐
+        ::: |   |___ |       |:::   / / |        ----------        |+ \ \  └─┤ │$            $│
+        ::: |    ___||_     _|:::.-" ;  \        \________/        /+  \ "--/│$│    SHARES    │
+        ::: |   |      |   |  ::),.-'    `-..__________________..-' +=  `---=└─┤              │
+         :: |___|      |___|  ::=/              |    | |    |                  │$            $│
+          :       TOKEN       :                 |    | |    |                  └──────────────┘
+           `:::::::::::::::::'                  |    | |    |
+             `-:::::::::::-'                    +----+ +----+
+                `'''''''`                  _..._|____| |____| _..._
+                                         .` "-. `%   | |    %` .-" `.
+                                        /      \    .: :.     /      \
+                                        '-..___|_..=:` `-:=.._|___..-'
+                                                                           */
+
+/// A Yieldspace AMM implementation for pools providing liquidity for fyTokens and tokenized vault tokens.
 /// https://yield.is/YieldSpace.pdf
 /// @title  Pool.sol
 /// @dev Instantiate pool with Yearn token and associated fyToken. Uses 64.64 bit math under the hood for precision and reduced gas usage.
@@ -85,21 +87,21 @@ contract Pool is IYVPool, ERC20Permit {
     );
     event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
 
-    int128 public immutable mu; //                   The normalization coefficient -- which is the initial c value
-    int128 public immutable override ts; //          1 / Seconds in 10 years, in 64.64
-    int128 public immutable override g1; //          To be used when selling base to the pool
-    int128 public immutable override g2; //          To be used when selling fyToken to the pool
+    int128 public immutable mu; //                     The normalization coefficient -- which is the initial c value
+    int128 public immutable override ts; //            1 / Seconds in 10 years, in 64.64
+    int128 public immutable override g1; //            To be used when selling base to the pool
+    int128 public immutable override g2; //            To be used when selling fyToken to the pool
     uint32 public immutable override maturity;
-    uint96 public immutable override scaleFactor; // Scale up to 18 low decimal tokens to get the right precision in YieldMath
+    uint96 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
 
     IYVToken public immutable override base;
     IFYToken public immutable override fyToken;
 
-    uint112 private baseCached; //                   uses single storage slot, accessible via getCache
-    uint112 private fyTokenCached; //                uses single storage slot, accessible via getCache
-    uint32 private blockTimestampLast; //            uses single storage slot, accessible via getCache
+    uint112 private baseCached; //                     uses single storage slot, accessible via getCache
+    uint112 private fyTokenCached; //                  uses single storage slot, accessible via getCache
+    uint32 private blockTimestampLast; //              uses single storage slot, accessible via getCache
 
-    uint256 public cumulativeBalancesRatio; //       Fixed point factor with 27 decimals (ray)
+    uint256 public cumulativeBalancesRatio; //         Fixed point factor with 27 decimals (ray)
 
     constructor(
         address base_,
@@ -442,7 +444,7 @@ contract Pool is IYVPool, ERC20Permit {
                         ::  / /   / /_/ /::     │
                         :: / /___/ ____/ ::     └──────►  B A S E
                         ::/_____/_/      ::
-                         :               :
+                         :           gg  :
                           `-:::::::::::-'
                              `'''''''`
     */
@@ -483,7 +485,7 @@ contract Pool is IYVPool, ERC20Permit {
                         ::  / /   / /_/ /::
                         :: / /___/ ____/ ::
                         ::/_____/_/      ::
-                         :               :
+                         :            gg :
                           `-:::::::::::-'
                              `'''''''`
     */
@@ -741,8 +743,7 @@ contract Pool is IYVPool, ERC20Permit {
     /// @dev Returns how much fyToken would be required to buy `tokenOut` base.
     /// @param tokenOut Amount of base hypothetically desired.
     /// @return Amount of fyToken hypothetically required.
-    // function buyBasePreview(uint128 tokenOut) external view override returns (uint128) {
-    function buyBasePreview(uint128 tokenOut) external override returns (uint128) {
+    function buyBasePreview(uint128 tokenOut) external view override returns (uint128) {
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _buyBasePreview(tokenOut, _baseCached, _fyTokenCached);
     }
@@ -752,8 +753,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint128 tokenOut,
         uint112 baseBalance,
         uint112 fyTokenBalance
-    ) private beforeMaturity returns (uint128) {
-        // ) private view beforeMaturity returns (uint128) {
+    ) private view beforeMaturity returns (uint128) {
         return
             YieldMath.fyTokenInForSharesOut(
                 baseBalance * scaleFactor,
@@ -827,7 +827,7 @@ contract Pool is IYVPool, ERC20Permit {
     /// @dev Returns how much base would be obtained by selling `fyTokenIn` fyToken.
     /// @param fyTokenIn Amount of fyToken hypothetically sold.
     /// @return Amount of base hypothetically bought.
-    function sellFYTokenPreview(uint128 fyTokenIn) public returns (uint128) {
+    function sellFYTokenPreview(uint128 fyTokenIn) public view returns (uint128) {
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _sellFYTokenPreview(fyTokenIn, _baseCached, _fyTokenCached);
     }
@@ -837,8 +837,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint128 fyTokenIn,
         uint112 baseBalance,
         uint112 fyTokenBalance
-    ) public beforeMaturity returns (uint128) {
-        // ) private view beforeMaturity returns (uint128) {  // todo: use this but consider changing to public for tests
+    ) private view beforeMaturity returns (uint128) {
         return
             YieldMath.sharesOutForFYTokenIn(
                 baseBalance * scaleFactor,
@@ -917,7 +916,7 @@ contract Pool is IYVPool, ERC20Permit {
     /// @param fyTokenOut Amount of fyToken hypothetically desired.
     /// @return Amount of base hypothetically required.
     // function buyFYTokenPreview(uint128 fyTokenOut) external view override returns (uint128) { // todo
-    function buyFYTokenPreview(uint128 fyTokenOut) external override returns (uint128) {
+    function buyFYTokenPreview(uint128 fyTokenOut) external view override returns (uint128) {
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _buyFYTokenPreview(fyTokenOut, _baseCached, _fyTokenCached);
     }
@@ -927,8 +926,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint128 fyTokenOut,
         uint128 baseBalance,
         uint128 fyTokenBalance
-    ) private beforeMaturity returns (uint128) {
-        // ) private view beforeMaturity returns (uint128) { todo
+    ) private view beforeMaturity returns (uint128) {
         uint128 baseIn = YieldMath.sharesInForFYTokenOut(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
