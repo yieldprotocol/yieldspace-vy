@@ -21,21 +21,21 @@ library YieldMathExtensions {
     //         );
     // }
 
-    // @dev max amount of fyTokens that can be bought from the pool
-    function maxFYTokenOut(IPool pool) external view returns (uint128) {
-        (uint112 _baseCached, uint112 _fyTokenCached, ) = pool.getCache();
-        uint96 scaleFactor = pool.scaleFactor();
-        return
-            YieldMath.maxFYTokenOut(
-                _baseCached * scaleFactor,
-                _fyTokenCached * scaleFactor,
-                pool.maturity() - uint32(block.timestamp),
-                pool.ts(),
-                pool.g1(),
-                int128(107 * 10**16),
-                int128(107 * 10**16)
-            ) / scaleFactor;
-    }
+    // // @dev max amount of fyTokens that can be bought from the pool
+    // function maxFYTokenOut(IPool pool) external view returns (uint128) {
+    //     (uint112 _baseCached, uint112 _fyTokenCached, ) = pool.getCache();
+    //     uint96 scaleFactor = pool.scaleFactor();
+    //     return
+    //         YieldMath.maxFYTokenOut(
+    //             _baseCached * scaleFactor,
+    //             _fyTokenCached * scaleFactor,
+    //             pool.maturity() - uint32(block.timestamp),
+    //             pool.ts(),
+    //             pool.g1(),
+    //             int128(107 * 10**16),
+    //             int128(107 * 10**16)
+    //         ) / scaleFactor;
+    // }
 
     /// @dev max amount of fyTokens that can be sold into the pool
     function maxFYTokenIn(IPool pool) external view returns (uint128) {

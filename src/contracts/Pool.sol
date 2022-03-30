@@ -649,8 +649,7 @@ contract Pool is IYVPool, ERC20Permit {
     /// @dev Returns how much fyToken would be obtained by selling `baseIn` base
     /// @param baseIn Amount of base hypothetically sold.
     /// @return Amount of fyToken hypothetically bought.
-    // function sellBasePreview(uint128 baseIn) external view override returns (uint128) {
-    function sellBasePreview(uint128 baseIn) external override returns (uint128) {
+    function sellBasePreview(uint128 baseIn) external view override returns (uint128) {
         (uint112 _baseCached, uint112 _fyTokenCached) = (baseCached, fyTokenCached);
         return _sellBasePreview(baseIn, _baseCached, _fyTokenCached);
     }
@@ -660,8 +659,7 @@ contract Pool is IYVPool, ERC20Permit {
         uint128 baseIn,
         uint112 baseBalance,
         uint112 fyTokenBalance
-    ) private beforeMaturity returns (uint128) {
-        // ) private view beforeMaturity returns (uint128) {
+    ) private view beforeMaturity returns (uint128) {
         uint128 fyTokenOut = YieldMath.fyTokenOutForSharesIn(
             baseBalance * scaleFactor,
             fyTokenBalance * scaleFactor,
