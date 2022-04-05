@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.13; /*
+/*
   __     ___      _     _
   \ \   / (_)    | |   | |  ██████╗  ██████╗  ██████╗ ██╗        ███████╗ ██████╗ ██╗
    \ \_/ / _  ___| | __| |  ██╔══██╗██╔═══██╗██╔═══██╗██║        ██╔════╝██╔═══██╗██║
@@ -9,6 +8,9 @@ pragma solidity >=0.8.13; /*
        yieldprotocol.com    ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝╚═╝╚══════╝ ╚═════╝ ╚══════╝
 
 */
+
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity >=0.8.13;
 
 import "@yield-protocol/utils-v2/contracts/token/IERC20.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
@@ -396,7 +398,7 @@ contract Pool is IYVPool, ERC20Permit {
         } else {
             // There is an optional virtual trade before the mint
             uint256 baseToSell;
-            if (fyTokenToBuy > 0) {
+            if (fyTokenToBuy != 0) {
                 baseToSell = _buyFYTokenPreview(fyTokenToBuy.u128(), _baseCached, _fyTokenCached);
             }
 
@@ -419,7 +421,7 @@ contract Pool is IYVPool, ERC20Permit {
         _mint(to, tokensMinted);
 
         // Return any unused base
-        if (baseAvailable - baseIn > 0) base.safeTransfer(remainder, baseAvailable - baseIn);
+        if (baseAvailable - baseIn != 0) base.safeTransfer(remainder, baseAvailable - baseIn);
 
         emit Liquidity(
             maturity,
@@ -573,7 +575,7 @@ contract Pool is IYVPool, ERC20Permit {
         // Transfer assets
         _burn(address(this), tokensBurned);
         base.safeTransfer(baseTo, tokenOut);
-        if (fyTokenOut > 0) fyToken.safeTransfer(fyTokenTo, fyTokenOut);
+        if (fyTokenOut != 0) fyToken.safeTransfer(fyTokenTo, fyTokenOut);
 
         emit Liquidity(
             maturity,

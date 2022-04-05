@@ -7,13 +7,14 @@
       |_|  |_|\___|_|\__,_|    ██║   ██║███████╗███████╗██████╔╝██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║
        yieldprotocol.com       ╚═╝   ╚═╝╚══════╝╚══════╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
 */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.8.13;
 
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 
-/// Ethereum smart contract library implementing Yield Math model with yield bearing tokens.
+// Ethereum smart contract library implementing Yield Math model with yield bearing tokens.
 library YieldMath {
     using Math64x64 for int128;
     using Math64x64 for uint128;
@@ -495,61 +496,60 @@ library YieldMath {
     }
 
 
-    //  This fn has never been finalized
-    // /// @notice Calculates the max amount of fyToken that could go out based on current reserves.
-    // /// @param sharesReserves yield bearing vault shares reserve amount
-    // /// @param fyTokenReserves fyToken reserves amount
-    // /// @param timeTillMaturity time till maturity in seconds e.g. 90 days in seconds
-    // /// @param k time till maturity coefficient, multiplied by 2^64.  e.g. 25 years in seconds
-    // /// @param g fee coefficient, multiplied by 2^64 -- sb under 1.0 for selling shares to pool
-    // /// @param c price of shares in terms of their base, multiplied by 2^64
-    // /// @param mu (μ) Normalization factor -- starts as c at initialization
-    // /// @return fyTokenOut the amount of fyToken a user would get for given amount of shares
-    // function maxFYTokenOut(
-    //     uint128 sharesReserves, // z
-    //     uint128 fyTokenReserves, // x
-    //     uint128 timeTillMaturity,
-    //     int128 k,
-    //     int128 g,
-    //     int128 c,
-    //     int128 mu
-    // ) public pure returns (uint128 fyTokenOut) {
-    //     unchecked {
-    //         require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
-    //         return _maxFYTokenOut(sharesReserves, fyTokenReserves, _computeA(timeTillMaturity, k, g), c, mu);
-    //     }
-    // }
+    /// @notice Calculates the max amount of fyToken that could go out based on current reserves.
+    /// @param sharesReserves yield bearing vault shares reserve amount
+    /// @param fyTokenReserves fyToken reserves amount
+    /// @param timeTillMaturity time till maturity in seconds e.g. 90 days in seconds
+    /// @param k time till maturity coefficient, multiplied by 2^64.  e.g. 25 years in seconds
+    /// @param g fee coefficient, multiplied by 2^64 -- sb under 1.0 for selling shares to pool
+    /// @param c price of shares in terms of their base, multiplied by 2^64
+    /// @param mu (μ) Normalization factor -- starts as c at initialization
+    /// @return fyTokenOut the amount of fyToken a user would get for given amount of shares
+    function maxFYTokenOut(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // x
+        uint128 timeTillMaturity,
+        int128 k,
+        int128 g,
+        int128 c,
+        int128 mu
+    ) public pure returns (uint128 fyTokenOut) {
+        unchecked {
+            require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
+            return _maxFYTokenOut(sharesReserves, fyTokenReserves, _computeA(timeTillMaturity, k, g), c, mu);
+        }
+    }
 
-    // function _maxFYTokenOut(
-    //     uint128 sharesReserves, // z
-    //     uint128 fyTokenReserves, // y
-    //     uint128 a,
-    //     int128 c,
-    //     int128 mu
-    // ) internal pure returns (uint128) {
-    //     /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
+    function _maxFYTokenOut(
+        uint128 sharesReserves, // z
+        uint128 fyTokenReserves, // y
+        uint128 a,
+        int128 c,
+        int128 mu
+    ) internal pure returns (uint128) {
+        /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
 
-    //         dy = y - ((        numerator               ) / (    denominator               ))^(   invA  )
-    //         dy = y - (( cμ^(1-t) * z^(1-t) + μ*y^(1-t) ) / (  c*μ^(1-t) * (1/c)^(1-t) + μ ))^( 1/(1-t) )
+            dy = y - ((        numerator               ) / (    denominator               ))^(   invA  )
+            dy = y - (( cμ^(1-t) * z^(1-t) + μ*y^(1-t) ) / (  c*μ^(1-t) * (1/c)^(1-t) + μ ))^( 1/(1-t) )
 
-    //     Note: in the above equation t represents g * k * T
-    //             (1-t) is calculated separately in computeA and thereafter referred to as 'a' */
+        Note: in the above equation t represents g * k * T
+                (1-t) is calculated separately in computeA and thereafter referred to as 'a' */
 
-    //     //                  termA       termB      termC
-    //     // numerator =    cμ^(1-t)  * z^(1-t) +  mu * y^(1-t)
-    //     int128 termA = c.mul(int128(uint128(mu).pow(a, ONE)));
-    //     uint256 termB = sharesReserves.pow(a, ONE);
-    //     uint256 termC = mu.mulu(fyTokenReserves.pow(a, ONE));
-    //     uint256 numerator = termA.mulu(termB) + termC;
+        //                  termA       termB      termC
+        // numerator =    cμ^(1-t)  * z^(1-t) +  mu * y^(1-t)
+        int128 termA = c.mul(int128(uint128(mu).pow(a, ONE)));
+        uint256 termB = sharesReserves.pow(a, ONE);
+        uint256 termC = mu.mulu(fyTokenReserves.pow(a, ONE));
+        uint256 numerator = termA.mulu(termB) + termC;
 
-    //     // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ
-    //     uint256 denominator = uint256(uint128(termA.mul(int128(uint128(int128(ONE).div(c)).pow(a, ONE))) + mu));
-    //     // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
+        // denominator =  c*μ^(1-t) * (1/c)^(1-t) + μ
+        uint256 denominator = uint256(uint128(termA.mul(int128(uint128(int128(ONE).div(c)).pow(a, ONE))) + mu));
+        // uint256 denominator = uint256(uint128(c.div(mu)).pow(t, ONE) + ONE);
 
-    //     int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
-    //     // int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
-    //     // return result64.toUInt();
-    // }
+        int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
+        // int128 result64 = fyTokenReserves.fromUInt() - int128(uint128(numerator / (denominator)).pow(ONE, a));
+        // return result64.toUInt();
+    }
 
     /* UTILITY FUNCTIONS
     ******************************************************************************************************************/

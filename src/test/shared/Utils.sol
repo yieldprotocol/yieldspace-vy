@@ -9,7 +9,7 @@ function almostEqual(
     uint256 p
 ) view {
     uint256 diff = x > y ? x - y : y - x;
-    if (diff / p > 0) {
+    if (diff / p != 0) {
         console.log(x);
         console.log("is not almost equal to");
         console.log(y);

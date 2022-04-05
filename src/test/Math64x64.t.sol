@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.13; /*
+/*
   __     ___      _     _
   \ \   / (_)    | |   | | ████████╗███████╗███████╗████████╗███████╗
    \ \_/ / _  ___| | __| | ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
@@ -8,6 +7,9 @@ pragma solidity >=0.8.13; /*
      |_|  |_|\___|_|\__,_|    ██║   ███████╗███████║   ██║   ███████║
       yieldprotocol.com       ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
 */
+
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity >=0.8.13;
 
 import "ds-test/test.sol";
 
