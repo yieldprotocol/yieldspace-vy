@@ -339,7 +339,7 @@ contract YieldMathTest is DSTest {
             uint128(500_000 * 10**18)
         ];
         uint128[5] memory expectedResults = [
-            uint128(22533),
+            uint128(22_661),
             uint128(45_313),
             uint128(90_592),
             uint128(181_041),
@@ -360,7 +360,7 @@ contract YieldMathTest is DSTest {
                 ) /
                 1e18;
 
-            assertSameOrSlightlyMore(result, expectedResults[idx]);
+            assertSameOrSlightlyLess(result, expectedResults[idx]);
         }
     }
 
