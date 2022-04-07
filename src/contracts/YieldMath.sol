@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity >=0.8.13;
+
 /*
    __     ___      _     _
    \ \   / (_)    | |   | | ██╗   ██╗██╗███████╗██╗     ██████╗ ███╗   ███╗ █████╗ ████████╗██╗  ██╗
@@ -7,8 +10,6 @@
       |_|  |_|\___|_|\__,_|    ██║   ██║███████╗███████╗██████╔╝██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║
        yieldprotocol.com       ╚═╝   ╚═╝╚══════╝╚══════╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
 */
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.8.13;
 
 import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
@@ -24,9 +25,8 @@ library YieldMath {
     uint128 public constant ONE = 0x10000000000000000; //   In 64.64
     uint256 public constant MAX = type(uint128).max; //     Used for overflow checks
 
-
     /* CORE FUNCTIONS
-    ******************************************************************************************************************/
+     ******************************************************************************************************************/
 
     /* ----------------------------------------------------------------------------------------------------------------
                                               ┌───────────────────────────────┐                    .-:::::::::::-.
@@ -56,78 +56,83 @@ library YieldMath {
     function fyTokenOutForSharesIn(
         uint128 sharesReserves, // z
         uint128 fyTokenReserves, // x
-        uint128 sharesIn, // dx
+        uint128 sharesIn, // x == Δz
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
         int128 c,
         int128 mu
-    ) public pure returns (uint128 fyTokenOut) {
-        // TODO: If we stick w 0.8.13 then consider removing the internal fn for this and others
+    ) public pure returns (uint128) {
         unchecked {
             require(c > 0 && mu > 0, "YieldMath: c and mu must be positive");
 
-            return
-                _fyTokenOutForSharesIn(
-                    sharesReserves,
-                    fyTokenReserves,
-                    sharesIn,
-                    _computeA(timeTillMaturity, k, g),
-                    c,
-                    mu
+            uint128 a = _computeA(timeTillMaturity, k, g);
+
+            uint256 sum;
+            {
+                /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
+
+                y = fyToken reserves
+                z = base reserves
+                x = Δz (sharesIn)
+
+                     y - (                         sum                           )^(   invA   )
+                     y - ((    Za         ) + (  Ya  ) - (       Zxa           ) )^(   invA   )
+                Δy = y - ( c/μ * (μz)^(1-t) +  y^(1-t) -  c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
+
+                */
+                uint256 normalizedSharesReserves;
+                require(
+                    (normalizedSharesReserves = mu.mulu(sharesReserves)) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
                 );
+
+                // za = c/μ * (normalizedSharesReserves ** a)
+                uint256 za;
+                require(
+                    (za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE))) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
+                );
+
+                // ya = fyTokenReserves ** a
+                uint256 ya = fyTokenReserves.pow(a, ONE);
+
+                // normalizedSharesIn = μ * sharesIn
+                uint256 normalizedSharesIn;
+                require(
+                    (normalizedSharesIn = mu.mulu(sharesIn)) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
+                );
+
+                // zx = normalizedBaseReserves + sharesIn * μ
+                uint256 zx;
+                require((zx = normalizedSharesReserves + normalizedSharesIn) <= MAX, "YieldMath: Too much shares in");
+
+                // zxa = c/μ * zx ** a
+                uint256 zxa;
+                require(
+                    (zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE))) <= MAX,
+                    "YieldMath: Exchange rate overflow after trade"
+                );
+
+                // sum = za + ya - zxa
+                require(
+                    (sum = za + ya - zxa) <= MAX, // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+                    "YieldMath: Insufficient fyToken reserves"
+                );
+            }
+
+            // result = fyTokenReserves - (sum ** (1/a))
+            uint256 fyTokenOut;
+            require(
+                (fyTokenOut = uint256(fyTokenReserves) - uint256(uint128(sum).pow(ONE, a))) <= MAX,
+                "YieldMath: Rounding induced error"
+            );
+
+            fyTokenOut = fyTokenOut < MAX - 1e12 ? fyTokenOut + 1e12 : MAX; // Add error guard, ceiling the result at max
+
+            return uint128(fyTokenOut);
         }
-    }
-
-    function _fyTokenOutForSharesIn(
-        uint128 sharesReserves, // z
-        uint128 fyTokenReserves, // x
-        uint128 sharesIn, // dx
-        uint128 a,
-        int128 c,
-        int128 mu
-    ) internal pure returns (uint128) {
-        /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
-
-                    (                        sum                          )
-                    (    Za        )   ( Ya  )   (       Zxa         )   (   invA   )
-        dy = y - ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz + μdx)^(1-t) )^(1 / (1 - t))
-
-        */
-        // normalizedSharesReserves = μ * sharesReserves
-        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
-        require(normalizedSharesReserves <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // za = c/μ * (normalizedSharesReserves ** a)
-        uint256 za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE));
-        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // ya = fyTokenReserves ** a
-        uint256 ya = fyTokenReserves.pow(a, ONE);
-
-        // normalizedSharesIn = μ * sharesIn
-        uint256 normalizedSharesIn = mu.mulu(sharesIn);
-        require(normalizedSharesIn <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // zx = normalizedBaseReserves + sharesIn * μ
-        uint256 zx = normalizedSharesReserves + normalizedSharesIn;
-        require(zx <= MAX, "YieldMath: Too much shares in");
-
-        // zxa = c/μ * zx ** a
-        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
-        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
-
-        // sum = za + ya - zxa
-        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
-        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
-
-        // result = fyTokenReserves - (sum ** (1/a))
-        uint256 result = uint256(fyTokenReserves) - uint256(uint128(sum).pow(ONE, a));
-        require(result <= MAX, "YieldMath: Rounding induced error");
-
-        result = result < MAX - 1e12 ? result + 1e12 : MAX; // Add error guard, ceiling the result at max
-
-        return uint128(result);
     }
 
     /* ----------------------------------------------------------------------------------------------------------------
@@ -153,7 +158,7 @@ library YieldMath {
     /// @param g fee coefficient, multiplied by 2^64
     /// @param c price of shares in terms of Dai, multiplied by 2^64
     /// @param mu (μ) Normalization factor -- starts as c at initialization
-    /// @return the amount of Shares a user would get for given amount of fyToken
+    /// @return result the amount of Shares a user would get for given amount of fyToken
     function sharesOutForFYTokenIn(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
@@ -163,10 +168,9 @@ library YieldMath {
         int128 g,
         int128 c,
         int128 mu
-    ) public pure returns (uint128) {
+    ) public pure returns (uint128 result) {
         unchecked {
             require(c > 0, "YieldMath: c must be positive");
-
             return
                 _sharesOutForFYTokenIn(
                     sharesReserves,
@@ -187,49 +191,54 @@ library YieldMath {
         uint128 a,
         int128 c,
         int128 mu
-    ) private pure returns (uint128 result) {
+    ) private pure returns (uint128) {
         /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
 
-                          (                     sum                                       )
-                            (       Za           )   ( Ya  )    (    Yxa     )              (   invA    )
-          dz = z - 1/μ  * ( ( (c / μ) * (μz)^(1-t) + y^(1-t) -  (y + x)^(1-t) ) / (c / μ) )^(1 / (1 - t))
+            y = fyToken reserves
+            z = base reserves
+            x = Δy (fyTokenIn)
+
+                 z - (                                rightSide                                              )
+                 z - (invMu) * (      Za              ) + ( Ya   ) - (    Yxa      ) / (c / μ) )^(   invA    )
+            Δz = z -   1/μ   * ( ( (c / μ) * (μz)^(1-t) +  y^(1-t) - (y + x)^(1-t) ) / (c / μ) )^(1 / (1 - t))
 
         */
-        // normalizedSharesReserves = μ * sharesReserves
-        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
-        require(normalizedSharesReserves <= MAX, "YieldMath: Exchange rate overflow before trade");
-        uint256 subtotalLeft = _getSubtotalLeft(normalizedSharesReserves, fyTokenReserves, fyTokenIn, a, c, mu);
-        require(subtotalLeft <= MAX, "YieldMath: Exchange rate overflow before trade");
+        unchecked {
+            // normalizedSharesReserves = μ * sharesReserves
+            uint256 normalizedSharesReserves;
+            require(
+                (normalizedSharesReserves = mu.mulu(sharesReserves)) <= MAX,
+                "YieldMath: Exchange rate overflow before trade"
+            );
 
-        int128 subtotal = subtotalLeft.divu(uint128(c.div(mu)));
-        uint128 subtotalRaised = uint128(subtotal).pow(uint128(ONE), uint128(a));
-        int128 invMu = int128(ONE).div(mu);
-        int128 rightSide = invMu.mul(int128(subtotalRaised));
+            int128 rightSide;
+            {
+                uint256 zaYaYxa;
+                {
+                    // za = c/μ * (normalizedSharesReserves ** a)
+                    uint256 za;
+                    require(
+                        (za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE))) <= MAX,
+                        "YieldMath: Exchange rate overflow before trade"
+                    );
 
-        require(rightSide <= int128(sharesReserves), "YieldMath: Exchange rate underflow before trade");
+                    // ya = fyTokenReserves ** a
+                    uint256 ya = fyTokenReserves.pow(a, ONE);
 
-        result = sharesReserves - uint128(rightSide);
-    }
+                    // yxa = (fyTokenReserves + x) ** a   # x is aka Δy
+                    uint256 yxa = (fyTokenReserves + fyTokenIn).pow(a, ONE);
 
-    function _getSubtotalLeft(
-        uint256 normalizedSharesReserves,
-        uint128 fyTokenReserves,
-        uint128 fyTokenIn,
-        uint128 a,
-        int128 c,
-        int128 mu
-    ) internal pure returns (uint256 subtotalLeft) {
-        // za = c/μ * (normalizedSharesReserves ** a)
-        uint256 za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE));
-        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+                    require((zaYaYxa = (za + ya - yxa)) <= MAX, "YieldMath: Exchange rate overflow before trade");
+                }
 
-        // ya = fyTokenReserves ** a
-        uint256 ya = fyTokenReserves.pow(a, ONE);
+                rightSide = int128(ONE).div(mu).mul(
+                    int128(uint128((zaYaYxa).divu(uint128(c.div(mu)))).pow(uint128(ONE), uint128(a)))
+                );
+            }
+            require(rightSide <= int128(sharesReserves), "YieldMath: Exchange rate underflow before trade");
 
-        // yxa = (fyTokenReserves + x) ** a   # x is aka Δy
-        uint256 yxa = (fyTokenReserves + fyTokenIn).pow(a, ONE);
-
-        subtotalLeft = (za + ya - yxa);
+            return sharesReserves - uint128(rightSide);
+        }
     }
 
     /* ----------------------------------------------------------------------------------------------------------------
@@ -265,71 +274,75 @@ library YieldMath {
         int128 g,
         int128 c,
         int128 mu
-    ) public pure returns (uint128 fyTokenIn) {
+    ) public pure returns (uint128) {
+        /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
+
+                y = fyToken reserves
+                z = base reserves
+                x = Δz (sharesOut)
+
+                     (                  sum                                )^(   invA    ) - y
+                     (    Za          ) + (  Ya  ) - (       Zxa           )^(   invA    ) - y
+                Δy = ( c/μ * (μz)^(1-t) +  y^(1-t) - c/μ * (μz - μx)^(1-t) )^(1 / (1 - t)) - y
+
+            */
+
         unchecked {
             require(c > 0, "YieldMath: c must be positive");
 
-            return
-                _fyTokenInForSharesOut(
-                    sharesReserves,
-                    fyTokenReserves,
-                    sharesOut,
-                    _computeA(timeTillMaturity, k, g),
-                    c,
-                    mu
+            uint128 a = _computeA(timeTillMaturity, k, g);
+            uint256 sum;
+            {
+                // normalizedSharesReserves = μ * sharesReserves
+                uint256 normalizedSharesReserves;
+                require(
+                    (normalizedSharesReserves = mu.mulu(sharesReserves)) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
                 );
+
+                // za = c/μ * (normalizedSharesReserves ** a)
+                uint256 za;
+                require(
+                    (za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE))) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
+                );
+
+                // ya = fyTokenReserves ** a
+                uint256 ya = fyTokenReserves.pow(a, ONE);
+
+                // normalizedSharesOut = μ * sharesOut
+                uint256 normalizedSharesOut;
+                require(
+                    (normalizedSharesOut = mu.mulu(sharesOut)) <= MAX,
+                    "YieldMath: Exchange rate overflow before trade"
+                );
+
+                // zx = normalizedBaseReserves + sharesOut * μ
+                require(normalizedSharesReserves >= normalizedSharesOut, "YieldMath: Too much shares in");
+                uint256 zx = normalizedSharesReserves - normalizedSharesOut;
+
+                // zxa = c/μ * zx ** a
+                uint256 zxa;
+                require(
+                    (zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE))) <= MAX,
+                    "YieldMath: Exchange rate overflow after trade"
+                );
+
+                // sum = za + ya - zxa
+                // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
+                require((sum = za + ya - zxa) <= MAX, "YieldMath: Insufficient fyToken reserves");
+            }
+            // result = fyTokenReserves - (sum ** (1/a))
+            uint256 result;
+            require(
+                (result = uint256(uint128(sum).pow(ONE, a)) - uint256(fyTokenReserves)) <= MAX,
+                "YieldMath: Rounding induced error"
+            );
+
+            result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
+
+            return uint128(result);
         }
-    }
-
-    function _fyTokenInForSharesOut(
-        uint128 sharesReserves,
-        uint128 fyTokenReserves,
-        uint128 sharesOut,
-        uint128 a,
-        int128 c,
-        int128 mu
-    ) public pure returns (uint128 fyTokenIn) {
-        /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
-
-               (                  sum                               )
-                 (    Za        ) + ( Ya  ) - (       Zxa           )^(   invA    )
-          dy = ( c/μ * (μz)^(1-t) + y^(1-t) - c/μ * (μz - μx)^(1-t) )^(1 / (1 - t)) - y
-
-        */
-        // normalizedSharesReserves = μ * sharesReserves
-        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
-        require(normalizedSharesReserves <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // za = c/μ * (normalizedSharesReserves ** a)
-        uint256 za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE));
-        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // ya = fyTokenReserves ** a
-        uint256 ya = fyTokenReserves.pow(a, ONE);
-
-        // normalizedSharesOut = μ * sharesOut
-        uint256 normalizedSharesOut = mu.mulu(sharesOut);
-        require(normalizedSharesOut <= MAX, "YieldMath: Exchange rate overflow before trade");
-
-        // zx = normalizedBaseReserves + sharesOut * μ
-        require(normalizedSharesReserves >= normalizedSharesOut, "YieldMath: Too much shares in");
-        uint256 zx = normalizedSharesReserves - normalizedSharesOut;
-
-        // zxa = c/μ * zx ** a
-        uint256 zxa = c.div(mu).mulu(uint128(zx).pow(a, ONE));
-        require(zxa <= MAX, "YieldMath: Exchange rate overflow after trade");
-
-        // sum = za + ya - zxa
-        uint256 sum = za + ya - zxa; // z < MAX, y < MAX, a < 1. It can only underflow, not overflow.
-        require(sum <= MAX, "YieldMath: Insufficient fyToken reserves");
-
-        // result = fyTokenReserves - (sum ** (1/a))
-        uint256 result = uint256(uint128(sum).pow(ONE, a)) - uint256(fyTokenReserves);
-        require(result <= MAX, "YieldMath: Rounding induced error");
-
-        result = result > 1e12 ? result - 1e12 : 0; // Subtract error guard, flooring the result at zero
-
-        return uint128(result);
     }
 
     /* ----------------------------------------------------------------------------------------------------------------
@@ -348,17 +361,17 @@ library YieldMath {
     */
     /// @param sharesReserves yield bearing vault shares reserve amount
     /// @param fyTokenReserves fyToken reserves amount
-    /// @param fyTokenAmount fyToken amount to be traded
+    /// @param fyTokenOut fyToken amount to be traded
     /// @param timeTillMaturity time till maturity in seconds e.g. 90 days in seconds
     /// @param k time till maturity coefficient, multiplied by 2^64.  e.g. 25 years in seconds
     /// @param g fee coefficient, multiplied by 2^64 -- sb under 1.0 for selling shares to pool
     /// @param c price of shares in terms of their base, multiplied by 2^64
     /// @param mu (μ) Normalization factor -- starts as c at initialization
-    /// @return the amount of shares a user would have to pay for given amount of fyToken
+    /// @return result the amount of shares a user would have to pay for given amount of fyToken
     function sharesInForFYTokenOut(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 fyTokenAmount,
+        uint128 fyTokenOut,
         uint128 timeTillMaturity,
         int128 k,
         int128 g,
@@ -367,12 +380,11 @@ library YieldMath {
     ) public pure returns (uint128) {
         unchecked {
             require(c > 0, "YieldMath: c must be positive");
-
             return
                 _sharesInForFYTokenOut(
                     sharesReserves,
                     fyTokenReserves,
-                    fyTokenAmount,
+                    fyTokenOut,
                     _computeA(timeTillMaturity, k, g),
                     c,
                     mu
@@ -384,16 +396,54 @@ library YieldMath {
     function _sharesInForFYTokenOut(
         uint128 sharesReserves,
         uint128 fyTokenReserves,
-        uint128 fyTokenAmount,
+        uint128 fyTokenOut,
         uint128 a,
         int128 c,
         int128 mu
     ) private pure returns (uint128) {
         /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
 
-            y = fyToken
-            z = vyToken
-            x = Δy
+        y = fyToken reserves
+        z = base reserves
+        x = Δy (fyTokenOut)
+
+             1/μ * (                 subtotal                            )^(   invA    ) - z
+             1/μ * ((     Za       ) + (  Ya  ) - (    Yxa    )) / (c/μ) )^(   invA    ) - z
+        Δz = 1/μ * (( c/μ * μz^(1-t) +  y^(1-t) - (y - x)^(1-t)) / (c/μ) )^(1 / (1 - t)) - z
+
+        */
+        unchecked {
+            // normalizedSharesReserves = μ * sharesReserves
+            require(mu.mulu(sharesReserves) <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+            // za = c/μ * (normalizedSharesReserves ** a)
+            uint256 za = c.div(mu).mulu(uint128(mu.mulu(sharesReserves)).pow(a, ONE));
+            require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+            // ya = fyTokenReserves ** a
+            uint256 ya = fyTokenReserves.pow(a, ONE);
+
+            // yxa = (fyTokenReserves - x) ** aß
+            uint256 yxa = (fyTokenReserves - fyTokenOut).pow(a, ONE);
+
+            uint256 zaYaYxa;
+            require((zaYaYxa = (za + ya - yxa)) <= MAX, "YieldMath: Exchange rate overflow before trade");
+
+            int128 subtotal = int128(ONE).div(mu).mul(
+                int128(uint128(zaYaYxa.divu(uint128(c.div(mu)))).pow(uint128(ONE), uint128(a)))
+            );
+
+            require(subtotal >= int128(sharesReserves), "YieldMath: Exchange rate underflow before trade");
+
+            return uint128(subtotal) - sharesReserves;
+        }
+    }
+
+    /* https://docs.google.com/spreadsheets/d/14K_McZhlgSXQfi6nFGwDvDh4BmOu6_Hczi_sFreFfOE/
+
+            y = fyToken reserves
+            z = base reserves
+
 
                         (                 subtotal                             )
                         (     Za       )  (  Ya  )   (    Yxa     )             (   invA   )
@@ -401,35 +451,35 @@ library YieldMath {
 
         */
 
-        // normalizedSharesReserves = μ * sharesReserves
-        uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
-        require(normalizedSharesReserves <= MAX, "YieldMath: Exchange rate overflow before trade");
+    //     // normalizedSharesReserves = μ * sharesReserves
+    //     uint256 normalizedSharesReserves = mu.mulu(sharesReserves);
+    //     require(normalizedSharesReserves <= MAX, "YieldMath: Exchange rate overflow before trade");
 
-        // za = c/μ * (normalizedSharesReserves ** a)
-        uint256 za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE));
-        require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
+    //     // za = c/μ * (normalizedSharesReserves ** a)
+    //     uint256 za = c.div(mu).mulu(uint128(normalizedSharesReserves).pow(a, ONE));
+    //     require(za <= MAX, "YieldMath: Exchange rate overflow before trade");
 
-        // ya = fyTokenReserves ** a
-        uint256 ya = fyTokenReserves.pow(a, ONE);
+    //     // ya = fyTokenReserves ** a
+    //     uint256 ya = fyTokenReserves.pow(a, ONE);
 
-        // yxa = (fyTokenReserves - x) ** a   # x is aka Δy
-        uint256 yxa = (fyTokenReserves - fyTokenAmount).pow(a, ONE);
+    //     // yxa = (fyTokenReserves - x) ** a   # x is aka Δy
+    //     uint256 yxa = (fyTokenReserves - fyTokenOut).pow(a, ONE);
 
-        uint256 subtotalLeft = (za + ya - yxa);
-        require(subtotalLeft <= MAX, "YieldMath: Exchange rate overflow before trade");
+    //     uint256 subtotalLeft = (za + ya - yxa);
+    //     require(subtotalLeft <= MAX, "YieldMath: Exchange rate overflow before trade");
 
-        int128 subtotal = subtotalLeft.divu(uint128(c.div(mu)));
-        uint128 subtotalRaised = uint128(subtotal).pow(uint128(ONE), uint128(a));
-        int128 invMu = int128(ONE).div(mu);
-        int128 leftSide = invMu.mul(int128(subtotalRaised));
+    //     int128 subtotal = subtotalLeft.divu(uint128(c.div(mu)));
+    //     uint128 subtotalRaised = uint128(subtotal).pow(uint128(ONE), uint128(a));
+    //     int128 invMu = int128(ONE).div(mu);
+    //     int128 leftSide = invMu.mul(int128(subtotalRaised));
 
-        require(leftSide >= int128(sharesReserves), "YieldMath: Exchange rate underflow before trade");
+    //     require(leftSide >= int128(sharesReserves), "YieldMath: Exchange rate underflow before trade");
 
-        return uint128(leftSide) - sharesReserves;
-    }
+    //     return uint128(leftSide) - sharesReserves;
+    // }
 
     /* MAX FUNCTIONS
-    ******************************************************************************************************************/
+     ******************************************************************************************************************/
 
     /// @notice Calculates the maximum amount of fyToken a user could sell for given amount of Shares.
     /// @param sharesReserves shares reserves amount
@@ -494,7 +544,6 @@ library YieldMath {
         return uint128(result);
     }
 
-
     //  This fn has never been finalized
     // /// @notice Calculates the max amount of fyToken that could go out based on current reserves.
     // /// @param sharesReserves yield bearing vault shares reserve amount
@@ -552,7 +601,7 @@ library YieldMath {
     // }
 
     /* UTILITY FUNCTIONS
-    ******************************************************************************************************************/
+     ******************************************************************************************************************/
 
     function _computeA(
         uint128 timeTillMaturity,
@@ -570,5 +619,4 @@ library YieldMath {
 
         return uint128(a);
     }
-
 }
