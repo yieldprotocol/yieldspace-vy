@@ -30,6 +30,19 @@ import {Math64x64} from "./Math64x64.sol";
 import {Exp64x64} from "./Exp64x64.sol";
 import {YieldMath} from "./YieldMath.sol";
 
+/* ERRORS
+******************************************************************************************************************/
+
+/// An invalid maturity date was passed into the constructor. Maturity date must be less than type(uint64).max
+error MaturityOverflow();
+
+/// The pool has matured.  Trades are not allowed after maturity.
+error AfterMaturity();
+
+/// The reserves have changed compared with the last cache which causes the trade to fall below or above the min/max
+/// slippage ratio selected.  This is likely a result of a sandwich attack.
+error Slippage();
+
 /*
 
                                                 ┌─────────┐
@@ -64,7 +77,7 @@ import {YieldMath} from "./YieldMath.sol";
 /// https://yield.is/YieldSpace.pdf
 /// @title  Pool.sol
 /// @dev Instantiate pool with Yearn token and associated fyToken. Uses 64.64 bit math under the hood for precision and reduced gas usage.
-/// @author Orignal work by alcueca. Adapted by devtooligan
+/// @author Orignal work by @alcueca. Adapted by @devtooligan
 contract Pool is IYVPool, ERC20Permit {
     using CastU256U128 for uint256;
     using CastU256U112 for uint256;
@@ -77,9 +90,9 @@ contract Pool is IYVPool, ERC20Permit {
     using MinimalTransferHelper for IFYToken;
     using MinimalTransferHelper for IYVToken;
 
-    event Trade(uint32 maturity, address indexed from, address indexed to, int256 bases, int256 fyTokens);
+    event Trade(uint64 maturity, address indexed from, address indexed to, int256 bases, int256 fyTokens);
     event Liquidity(
-        uint32 maturity,
+        uint64 maturity,
         address indexed from,
         address indexed to,
         address indexed fyTokenTo,
@@ -90,11 +103,11 @@ contract Pool is IYVPool, ERC20Permit {
     event Sync(uint112 baseCached, uint112 fyTokenCached, uint256 cumulativeBalancesRatio);
 
     int128 public immutable mu; //                     The normalization coefficient -- which is the initial c value
-    int128 public immutable override ts; //            1 / Seconds in 10 years, in 64.64
+    int128 public immutable override ts; //            1 / seconds in 10 years, in 64.64
     int128 public immutable override g1; //            To be used when selling base to the pool
     int128 public immutable override g2; //            To be used when selling fyToken to the pool
-    uint32 public immutable override maturity;
-    uint96 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
+    uint64 public immutable override maturity;
+    uint64 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
 
     IYVToken public immutable override base;
     IFYToken public immutable override fyToken;
@@ -122,21 +135,24 @@ contract Pool is IYVPool, ERC20Permit {
         fyToken = IFYToken(fyToken_);
         base = IYVToken(base_);
 
-        uint256 maturity_ = IFYToken(fyToken_).maturity();
-        require(maturity_ <= type(uint32).max, "Pool: Maturity too far in the future");
-        maturity = uint32(maturity_);
+        if ((maturity = uint32(IFYToken(fyToken_).maturity())) > type(uint32).max) {
+            revert MaturityOverflow();
+        }
 
         ts = ts_;
         g1 = g1_;
         g2 = g2_;
 
-        scaleFactor = uint96(10**(18 - uint96(decimals)));
+        scaleFactor = uint64(10**(18 - uint96(decimals)));
         mu = mu_;
     }
 
     /// @dev Trading can only be done before maturity
     modifier beforeMaturity() {
-        require(block.timestamp < maturity, "Pool: Too late");
+
+        if (block.timestamp >= maturity) {
+            revert AfterMaturity();
+        }
         _;
     }
 
@@ -155,7 +171,7 @@ contract Pool is IYVPool, ERC20Permit {
 
      ******************************************************************************************************************/
 
-    /// @dev Returns the cached balances & last updated timestamp.
+    /// Returns the cached balances & last updated timestamp.
     /// @return Cached base token balance.
     /// @return Cached virtual FY token balance.
     /// @return Timestamp that balances were last cached.
@@ -248,14 +264,13 @@ contract Pool is IYVPool, ERC20Permit {
 
     /* LIQUIDITY FUNCTIONS
 
-        ┌────────────────────────────────┐
-        │  Mint. GM!                     │
-        │  Buy, sell, sell, buy -- stop  │
-        │  Burn. GG.                     │
-        │                                │
-        │  "Watashinojinsei"             │
-        │  a haiku by Poolie             │
-        └────────────────────────────────┘
+        ┌───────────────────────────────────────────┐
+        │  mint, alive. gm!                         │
+        │  buy, sell, mint more, buy, sell -- stop  │
+        │  mature. burn. gg.                        │
+        │                                           │
+        │  "Watashinojinsei" - a haiku by Poolie    │
+        └───────────────────────────────────────────┘
 
      ******************************************************************************************************************/
 
@@ -378,12 +393,14 @@ contract Pool is IYVPool, ERC20Permit {
         uint256 baseAvailable = baseBalance - _baseCached;
 
         // Check the burn wasn't sandwiched
-        require(
-            _realFYTokenCached == 0 ||
-                ((uint256(_baseCached) * 1e18) / _realFYTokenCached >= minRatio &&
-                    (uint256(_baseCached) * 1e18) / _realFYTokenCached <= maxRatio),
-            "Pool: Reserves ratio changed"
-        );
+        if (_realFYTokenCached != 0) {
+            if ((
+                (uint256(_baseCached) * 1e18) / _realFYTokenCached >= minRatio &&
+                (uint256(_baseCached) * 1e18) / _realFYTokenCached <= maxRatio)
+            ) {
+                revert Slippage();
+            }
+        }
 
         // Calculate token amounts
         if (supply == 0) {
