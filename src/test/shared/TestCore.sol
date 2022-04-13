@@ -7,8 +7,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 import "./Utils.sol";
 import "./Constants.sol";
-import {Pool} from "../../contracts/Pool.sol";
-import {PoolUser} from "../users/PoolUser.sol";
+import {Pool} from "../../contracts/Pool/Pool.sol";
 import {Exp64x64} from "../../contracts/Exp64x64.sol";
 import {FYTokenMock} from "../mocks/FYTokenMock.sol";
 import {YVTokenMock} from "../mocks/YVTokenMock.sol";
@@ -42,8 +41,8 @@ abstract contract TestCore {
     FYTokenMock public fyToken;
     Pool public pool;
 
-    PoolUser public alice;
-    PoolUser public bob;
+    address public alice;
+    address public bob;
 
     uint32 public maturity = uint32(block.timestamp + THREE_MONTHS);
 

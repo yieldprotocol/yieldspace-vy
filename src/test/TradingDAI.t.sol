@@ -7,19 +7,16 @@ import {console} from "forge-std/console.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
-import {Pool} from "../contracts/Pool.sol";
-import {ZeroState} from "./shared/ZeroState.sol";
-import {PoolUser} from "./users/PoolUser.sol";
+import {Pool} from "../contracts/Pool/Pool.sol";
+import {ZeroStateDai} from "./shared/ZeroState.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
 import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
 
-// TODO: Create PoolUser then new wrapper User that is based on both
 
-
-abstract contract WithExtraFYToken is ZeroState {
+abstract contract WithExtraFYToken is ZeroStateDai {
     using Math64x64 for int128;
     using Math64x64 for uint128;
     using Math64x64 for int256;
@@ -48,7 +45,7 @@ abstract contract OnceMature is WithExtraFYToken {
     }
 }
 
-contract TradeDAI__ZeroState is ZeroState {
+contract TradeDAI__ZeroState is ZeroStateDai {
     using Math64x64 for uint256;
     using Math64x64 for int128;
 
@@ -101,7 +98,8 @@ contract TradeDAI__ZeroState is ZeroState {
         base.mint(address(pool), baseDonation);
         fyToken.mint(address(pool), fyTokenIn);
 
-        bob.pool().sellFYToken(address(bob), 0);
+        vm.prank(bob);
+        pool.sellFYToken(address(bob), 0);
 
         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
@@ -167,14 +165,15 @@ contract TradeDAI__ZeroState is ZeroState {
 
         fyToken.mint(address(pool), initialFYTokens);
 
-        alice.pool().buyBase(address(bob), baseOut, uint128(MAX));
+        vm.startPrank(alice);
+        pool.buyBase(address(bob), baseOut, uint128(MAX));
         require(base.balanceOf(address(bob)) == userBaseBefore + baseOut);
 
         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal != pool.getFYTokenBalance());
 
-        alice.pool().retrieveFYToken(address(alice));
+        pool.retrieveFYToken(address(alice));
 
         require(fyToken.balanceOf(address(alice)) > userFYTokenBefore);
     }
@@ -239,7 +238,8 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
         fyToken.mint(address(pool), fyTokenDonation);
         base.mint(address(pool), baseIn);
 
-        alice.pool().sellBase(address(bob), 0);
+        vm.prank(alice);
+        pool.sellBase(address(bob), 0);
 
         (uint112 baseBalAfter, uint112 fyTokenBalAfter, uint32 unused2) = pool.getCache();
 
