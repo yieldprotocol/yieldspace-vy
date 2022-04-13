@@ -1,3 +1,61 @@
+# Dapp tools
 /out
+hevm.libs.*
+
+# Temp & IDE files
 .vscode/
+*~
+*.swp
+*.swo
+
+# Packaging
+*.tar.gz
+*.tgz
+package/
+
+# Buidler files
+cache
 cache/
+artifacts
+node_modules/
+abi/
+output/
+typechain/
+deployments/
+
+# Secret files
+.etherscanKey
+.infuraKey
+.mythxKey
+.secret
+build/
+
+# Solidity-coverage
+coverage/
+.coverage_contracts/
+coverage.json
+
+# Yarn
+yarn-error.log
+
+# NPM
+package-lock.json
+
+# Crytic
+crytic-export/
+
+# Typescript
+dist/
+
+# VSCodeCounter
+.VSCodeCounter/
+
+# Dapp
+.DS_Store
+
+hh-cache
+hh-cache/
+lib/ds-test
+# lib/
+lib/yield-utils-v2/
+lib/forge-std

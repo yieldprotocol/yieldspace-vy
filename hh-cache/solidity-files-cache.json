@@ -1,0 +1,1147 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/YieldMath.sol": {
+      "lastModificationDate": 1644872585520,
+      "contentHash": "ec692fc050f84c570e43a24e4b61321c",
+      "sourceName": "src/contracts/YieldMath.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./VariableYieldMath.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": []
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/extensions/PoolView.sol": {
+      "lastModificationDate": 1644885275800,
+      "contentHash": "2928d17d386df808dbcd440d922e438f",
+      "sourceName": "src/contracts/extensions/PoolView.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./YieldMathExtensions.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": []
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/Exp64x64.sol": {
+      "lastModificationDate": 1642433883995,
+      "contentHash": "c36b3129bb6930b4f9a8965970254c2e",
+      "sourceName": "src/contracts/Exp64x64.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./Math64x64.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "Exp64x64"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/Math64x64.sol": {
+      "lastModificationDate": 1642433883995,
+      "contentHash": "e0afa0bb366b5d92300962ccee74f6e4",
+      "sourceName": "src/contracts/Math64x64.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "Math64x64"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/Pool.sol": {
+      "lastModificationDate": 1644862218111,
+      "contentHash": "e0324c1ee3c06f9217a7667964efc644",
+      "sourceName": "src/contracts/Pool.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/IERC20.sol",
+        "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol",
+        "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol",
+        "@yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol",
+        "@yield-protocol/utils-v2/contracts/cast/CastU256U128.sol",
+        "@yield-protocol/utils-v2/contracts/cast/CastU256U112.sol",
+        "@yield-protocol/utils-v2/contracts/cast/CastU256I256.sol",
+        "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol",
+        "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol",
+        "@yield-protocol/yieldspace-interfaces/IPool.sol",
+        "@yield-protocol/vault-interfaces/IFYToken.sol",
+        "./Math64x64.sol",
+        "./Exp64x64.sol",
+        "./VariableYieldMath.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "Pool"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/IERC20.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "776f140b8a9f56eddcebbf9a07982c7c",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "98c2b0a5592ce23838c86d5663eef914",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20Metadata"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "3c6edf8072c1596a888c4126630cd43e",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./ERC20.sol",
+        "./IERC2612.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC20Permit"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "3139246a87e7b2f4ef4277bd843233f1",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/MinimalTransferHelper.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol",
+        "../utils/RevertMsgExtractor.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "MinimalTransferHelper"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/cast/CastU256U128.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "d2a92b89ba9969dad3e9e1e8f564949f",
+      "sourceName": "@yield-protocol/utils-v2/contracts/cast/CastU256U128.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CastU256U128"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/cast/CastU256U112.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "67f8073a3925cb18248b35f85cf704ac",
+      "sourceName": "@yield-protocol/utils-v2/contracts/cast/CastU256U112.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CastU256U112"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/cast/CastU256I256.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "42bf1e0957675e72478cd67aa847750b",
+      "sourceName": "@yield-protocol/utils-v2/contracts/cast/CastU256I256.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CastU256I256"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "2b607fe9758fe6322c3285e82dd2b19f",
+      "sourceName": "@yield-protocol/utils-v2/contracts/cast/CastU128U112.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CastU128U112"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "26dc9b60bd60a6dcd51fab2d587c33da",
+      "sourceName": "@yield-protocol/utils-v2/contracts/cast/CastU128I128.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CastU128I128"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/yieldspace-interfaces/IPool.sol": {
+      "lastModificationDate": 1644735097963,
+      "contentHash": "1278279588b497cbe48124ec17ef50df",
+      "sourceName": "@yield-protocol/yieldspace-interfaces/IPool.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/IERC20.sol",
+        "@yield-protocol/utils-v2/contracts/token/IERC2612.sol",
+        "@yield-protocol/vault-interfaces/IFYToken.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.0"
+      ],
+      "artifacts": [
+        "IPool"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/vault-interfaces/IFYToken.sol": {
+      "lastModificationDate": 1644735108883,
+      "contentHash": "a7ab296b36427bfd80f4f53d8cbceb26",
+      "sourceName": "@yield-protocol/vault-interfaces/IFYToken.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IFYToken"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/VariableYieldMath.sol": {
+      "lastModificationDate": 1644274743415,
+      "contentHash": "90af2272162d0e1f31decb09630f670c",
+      "sourceName": "src/contracts/VariableYieldMath.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./Math64x64.sol",
+        "./Exp64x64.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "VariableYieldMath"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/ERC20.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "717becb3eba94d8d3607a84ebd6f88c4",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/ERC20.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./IERC20Metadata.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/token/IERC2612.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "e420861b28de80b995a8247ab92ca787",
+      "sourceName": "@yield-protocol/utils-v2/contracts/token/IERC2612.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC2612"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/node_modules/@yield-protocol/utils-v2/contracts/utils/RevertMsgExtractor.sol": {
+      "lastModificationDate": 1644734963886,
+      "contentHash": "cba8ca48b27e56024f1c7fffe20ce4e5",
+      "sourceName": "@yield-protocol/utils-v2/contracts/utils/RevertMsgExtractor.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "RevertMsgExtractor"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/extensions/YieldMathExtensions.sol": {
+      "lastModificationDate": 1644885203597,
+      "contentHash": "3ec2673a7fb11c5b84fc18231337350e",
+      "sourceName": "src/contracts/extensions/YieldMathExtensions.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/yieldspace-interfaces/IPool.sol",
+        "../YieldMath.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "YieldMathExtensions"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/mocks/WETH9Mock.sol": {
+      "lastModificationDate": 1644872467395,
+      "contentHash": "2606b24b3ea7610a6be49577ed33df88",
+      "sourceName": "src/contracts/mocks/WETH9Mock.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "WETH9Mock"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/mocks/DaiMock.sol": {
+      "lastModificationDate": 1644872467395,
+      "contentHash": "dfc4bf3e72317861dc8c25dd838c964b",
+      "sourceName": "src/contracts/mocks/DaiMock.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "DaiMock"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/mocks/USDCMock.sol": {
+      "lastModificationDate": 1644872467395,
+      "contentHash": "97df7833b13d6c95e5bcc22c6eeae142",
+      "sourceName": "src/contracts/mocks/USDCMock.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "USDCMock"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/mocks/FYTokenMock.sol": {
+      "lastModificationDate": 1644872467395,
+      "contentHash": "97437dcc916604ed3b52ed3a5b85d258",
+      "sourceName": "src/contracts/mocks/FYTokenMock.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./BaseMock.sol",
+        "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "FYTokenMock"
+      ]
+    },
+    "/Users/devtooligan/dev/vy-yieldspace/src/contracts/mocks/BaseMock.sol": {
+      "lastModificationDate": 1644872467395,
+      "contentHash": "16c40f39f650979f468e6a74b50f6a47",
+      "sourceName": "src/contracts/mocks/BaseMock.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@yield-protocol/utils-v2/contracts/token/ERC20Permit.sol"
+      ],
+      "versionPragmas": [
+        "0.8.11"
+      ],
+      "artifacts": [
+        "BaseMock"
+      ]
+    }
+  }
+}
