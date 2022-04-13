@@ -5,15 +5,16 @@ import "forge-std/stdlib.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
-import "./Utils.sol";
-import "./Constants.sol";
-import {Pool} from "../../contracts/Pool/Pool.sol";
-import {TestCore} from "./TestCore.sol";
 import {Exp64x64} from "../../contracts/Exp64x64.sol";
-import {FYTokenMock} from "../mocks/FYTokenMock.sol";
-import {YVTokenMock} from "../mocks/YVTokenMock.sol";
 import {Math64x64} from "../../contracts/Math64x64.sol";
 import {YieldMath} from "../../contracts/YieldMath.sol";
+
+import "./Utils.sol";
+import "./Constants.sol";
+import {TestCore} from "./TestCore.sol";
+import {Pool} from "../../contracts/Pool/Pool.sol";
+import {FYTokenMock} from "../mocks/FYTokenMock.sol";
+import {YVTokenMock} from "../mocks/YVTokenMock.sol";
 
 struct ZeroStateParams {
     string baseName;
@@ -49,7 +50,7 @@ abstract contract ZeroState is TestCore {
         ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
         // setup mock tokens
         base = new YVTokenMock(baseName, baseSymbol, baseDecimals, address(0));
-        base.setPrice(cNumerator * 1e18 / cDenominator);
+        base.setPrice(cNumerator * (10 ** base.decimals()) / cDenominator);
         fyToken = new FYTokenMock(fyName, fySymbol, address(base), maturity);
 
         // setup pool
@@ -74,14 +75,6 @@ abstract contract ZeroStateDai is ZeroState {
     uint256 public constant initialFYTokens = 1_500_000 * 1e18;
     uint256 public constant initialBase = 1_100_000 * 1e18;
 
-    function setUp() public virtual override {
-        super.setUp();
-
-        base.mint(alice, aliceYVInitialBalance);
-        base.mint(bob, bobYVInitialBalance);
-
-    }
-
     ZeroStateParams public zeroStateParams = ZeroStateParams(
         "yvDAI",
         "Yearn Vault DAI",
@@ -92,6 +85,13 @@ abstract contract ZeroStateDai is ZeroState {
 
     constructor() ZeroState(zeroStateParams) {}
 
+    function setUp() public virtual override {
+        super.setUp();
+
+        base.mint(alice, aliceYVInitialBalance);
+        base.mint(bob, bobYVInitialBalance);
+
+    }
 }
 abstract contract ZeroStateUSDC is ZeroState {
     // used in 2 test suites __WithLiquidity
@@ -112,5 +112,13 @@ abstract contract ZeroStateUSDC is ZeroState {
     );
 
     constructor() ZeroState(zeroStateParams) {}
+
+   function setUp() public virtual override {
+        super.setUp();
+
+        base.mint(alice, aliceYVInitialBalance);
+        base.mint(bob, bobYVInitialBalance);
+
+    }
 
 }

@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.13;
-import "./PoolImports.sol";
-
 /*
   __     ___      _     _
   \ \   / (_)    | |   | |  ██████╗  ██████╗  ██████╗ ██╗        ███████╗ ██████╗ ██╗
@@ -38,6 +36,8 @@ import "./PoolImports.sol";
                                         /      \    .: :.     /      \
                                         '-..___|_..=:` `-:=.._|___..-'
 */
+
+import "./PoolImports.sol";
 
 /// A Yieldspace AMM implementation for pools providing liquidity for fyTokens and tokenized vault tokens.
 /// https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw
@@ -94,6 +94,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /* CONSTRUCTOR
      *****************************************************************************************************************/
+
     constructor(
         address base_,
         address fyToken_,
@@ -120,7 +121,6 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         g2 = g2_;
 
         scaleFactor = uint96(10**(18 - uint96(decimals)));
-        mu = mu_;
     }
 
     /* BALANCE MANAGEMENT FUNCTIONS
@@ -137,9 +137,24 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
                   _|o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o|_
                           "Poolie's Abacus" - ejm */
 
+    /// Returns the base balance
+    function getBaseBalance() public view override returns (uint112) {
+        return _getBaseBalance();
+    }
+
+    /// Returns the base current price
+    function getBaseCurrentPrice() public view returns (uint256) {
+        return base.pricePerShare();
+    }
+
+    /// Returns the "virtual" fyToken balance, which is the actual balance plus the pool token supply.
+    function getFYTokenBalance() public view override returns (uint112) {
+        return _getFYTokenBalance();
+    }
+
     /// Returns the cached balances & last updated timestamp.
     /// @return Cached base token balance.
-    /// @return Cached virtual FY token balance.
+    /// @return Cached virtual FY token balance which is the actual balance plus the pool token supply.
     /// @return Timestamp that balances were last cached.
     function getCache()
         external
@@ -154,41 +169,6 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         return (baseCached, fyTokenCached, blockTimestampLast);
     }
 
-    /// Updates the cache to match the actual balances.
-    function sync() external {
-        _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
-    }
-
-    /// Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
-    function getFYTokenBalance() public view override returns (uint112) {
-        return _getFYTokenBalance();
-    }
-
-    /// Returns the base balance
-    function getBaseBalance() public view override returns (uint112) {
-        return _getBaseBalance();
-    }
-
-    /// Returns the base current price
-    function getBaseCurrentPrice() public view returns (uint256) {
-        return base.pricePerShare();
-    }
-
-    /// Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
-    function _getFYTokenBalance() internal view returns (uint112) {
-        return (fyToken.balanceOf(address(this)) + _totalSupply).u112();
-    }
-
-    /// Returns the base balance
-    function _getBaseBalance() internal view returns (uint112) {
-        return base.balanceOf(address(this)).u112();
-    }
-
-    /// Returns the base current price
-    function _getC() internal view returns (int128) {
-        return ((base.pricePerShare() * scaleFactor).fromUInt()).div(uint256(1e18).fromUInt());
-    }
-
     /// Retrieve any base tokens not accounted for in the cache
     function retrieveBase(address to) external override returns (uint128 retrieved) {
         retrieved = _getBaseBalance() - baseCached; // Cache can never be above balances
@@ -201,6 +181,26 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
         fyToken.safeTransfer(to, retrieved);
         // Now the balances match the cache, so no need to update the TWAR
+    }
+
+    /// Updates the cache to match the actual balances.
+    function sync() external {
+        _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
+    }
+
+    /// Returns the base balance
+    function _getBaseBalance() internal view returns (uint112) {
+        return base.balanceOf(address(this)).u112();
+    }
+
+    /// Returns the base current price
+    function _getC() internal view returns (int128) {
+        return ((base.pricePerShare() * scaleFactor).fromUInt()).div(uint256(1e18).fromUInt());
+    }
+
+    /// Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
+    function _getFYTokenBalance() internal view returns (uint112) {
+        return (fyToken.balanceOf(address(this)) + _totalSupply).u112();
     }
 
     /// Update cache and, on the first call per block, ratio accumulators
@@ -233,7 +233,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         ┌───────────────────────────────────────────┐
         │  mint new life. gm!                       │
         │  buy, sell, mint more, buy, sell -- stop  │
-        │  mature. burn. gg.                        │
+        │  mature, burn. gg~                        │
         │                                           │
         │  "Watashinojinsei" - a haiku by Poolie    │
         └───────────────────────────────────────────┘
@@ -244,7 +244,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
                                                                                               v
          ___                                                                            \            /
          |_ \_/                   ┌───────────────────────────────┐
-         |   |                    │                               │                 `    _......._     '   GM!
+         |   |                    │                               │                 `    _......._     '   gm!
                                  \│                               │/                  .-:::::::::::-.
            │                     \│                               │/             `   :    __    ____ :   /
            └───────────────►      │            mint               │                 ::   / /   / __ \::

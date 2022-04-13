@@ -11,11 +11,11 @@ import {YieldMath} from "../contracts/YieldMath.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
+import {WithLiquidity} from "./MintBurn.t.sol";
 import {Pool} from "../contracts/Pool/Pool.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
 import {ZeroStateDai} from "./shared/ZeroState.sol";
-import {WithLiquidity} from "./MintBurn.t.sol";
 
 
 abstract contract WithExtraFYToken is WithLiquidity {

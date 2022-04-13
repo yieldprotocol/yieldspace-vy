@@ -5,30 +5,77 @@ import "forge-std/stdlib.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
-import {Exp64x64} from "../contracts/Exp64x64.sol";
-import {Math64x64} from "../contracts/Math64x64.sol";
-import {YieldMath} from "../contracts/YieldMath.sol";
-
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
 import {Pool} from "../contracts/Pool/Pool.sol";
+import {ZeroStateUSDC} from "./shared/ZeroState.sol";
+import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
-import {ZeroStateUSDC} from "./shared/ZeroState.sol";
+import {Math64x64} from "../contracts/Math64x64.sol";
+import {YieldMath} from "../contracts/YieldMath.sol";
 
 
 abstract contract WithLiquidity is ZeroStateUSDC {
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual {
+        super.setUp()
         base.mint(address(pool), initialBase);
         pool.mint(address(0), address(0), 0, MAX);
         fyToken.mint(address(pool), initialFYTokens);
         pool.sync();
 
+        // setup users
+        alice = address(1);
+        bob = address(2);
+        base.mint(alice, aliceYVInitialBalance);
+        base.mint(bob, bobYVInitialBalance);
+
     }
 }
 
-abstract contract WithExtraFYTokenUSDC is WithLiquidity {
+
+// abstract contract ZeroStateUSDC is TestCore {
+//     using Math64x64 for int128;
+//     using Math64x64 for uint128;
+//     using Math64x64 for int256;
+//     using Math64x64 for uint256;
+//     using Exp64x64 for uint128;
+
+//     // uint256 public constant initialFYTokens = 1_500_000 * 1e6;
+//     // uint256 public constant initialBase = 1_100_000 * 1e6;
+
+//     // uint256 public constant aliceYVInitialBalance = 1000 * 1e6;
+//     // uint256 public constant bobYVInitialBalance = 2_000_000 * 1e6;
+
+
+    // function setUp() public virtual {
+        // ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
+        // setup mock tokens
+        // base = new YVTokenMock("Yearn Vault USDC", "SSSSSHIT", 6, address(0));
+        // base.setPrice((cNumerator * 1e6) / cDenominator);
+        // fyToken = new FYTokenMock("fyToken yvUSDC maturity 1", "FUCK", address(base), maturity);
+        // fyToken.name();
+        // fyToken.symbol();
+
+        // setup pool
+        // pool = new Pool(address(base), address(fyToken), ts, g1, g2, mu);
+
+//         base.mint(address(pool), initialBase);
+//         pool.mint(address(0), address(0), 0, MAX);
+//         fyToken.mint(address(pool), initialFYTokens);
+//         pool.sync();
+
+//         // setup users
+//         alice = address(1);
+//         bob = address(2);
+//         base.mint(alice, aliceYVInitialBalance);
+//         base.mint(bob, bobYVInitialBalance);
+
+//     }
+// }
+
+
+abstract contract WithExtraFYTokenUSDC is ZeroStateUSDC {
     using Math64x64 for int128;
     using Math64x64 for uint128;
     using Math64x64 for int256;
@@ -44,7 +91,7 @@ abstract contract WithExtraFYTokenUSDC is WithLiquidity {
     }
 }
 
-contract TradeDAI__WithLiquidity is WithLiquidity {
+contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
     using Math64x64 for uint256;
     using Math64x64 for int128;
 
