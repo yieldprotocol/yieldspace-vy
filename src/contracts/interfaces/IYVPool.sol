@@ -11,8 +11,8 @@ interface IYVPool is IERC20, IERC2612 {
     function ts() external view returns(int128);
     function g1() external view returns(int128);
     function g2() external view returns(int128);
-    function maturity() external view returns(uint64);
-    function scaleFactor() external view returns(uint64);
+    function maturity() external view returns(uint32);
+    function scaleFactor() external view returns(uint96);
     function getCache() external view returns (uint112, uint112, uint32);
     function base() external view returns(IYVToken); // updated
     function fyToken() external view returns(IFYToken);

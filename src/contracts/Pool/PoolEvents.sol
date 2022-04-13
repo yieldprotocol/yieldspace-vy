@@ -5,9 +5,9 @@ pragma solidity >=0.8.13;
  ******************************************************************************************************************/
 
 interface PoolEvents {
-    event Trade(uint64 maturity, address indexed from, address indexed to, int256 bases, int256 fyTokens);
+    event Trade(uint32 maturity, address indexed from, address indexed to, int256 bases, int256 fyTokens);
     event Liquidity(
-        uint64 maturity,
+        uint32 maturity,
         address indexed from,
         address indexed to,
         address indexed fyTokenTo,

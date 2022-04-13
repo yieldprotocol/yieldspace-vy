@@ -78,8 +78,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     int128 public immutable override ts; //            1 / seconds in 10 years, in 64.64
     int128 public immutable override g1; //            To be used when selling base to the pool
     int128 public immutable override g2; //            To be used when selling fyToken to the pool
-    uint64 public immutable override maturity;
-    uint64 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
+    uint32 public immutable override maturity;
+    uint96 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
 
     IYVToken public immutable override base;
     IFYToken public immutable override fyToken;
@@ -119,7 +119,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         g1 = g1_;
         g2 = g2_;
 
-        scaleFactor = uint64(10**(18 - uint96(decimals)));
+        scaleFactor = uint96(10**(18 - uint96(decimals)));
         mu = mu_;
     }
 

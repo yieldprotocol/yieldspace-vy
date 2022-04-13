@@ -7,10 +7,6 @@ import {console} from "forge-std/console.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
-import {Pool} from "../contracts/Pool/Pool.sol";
-import {FYTokenMock} from "./mocks/FYTokenMock.sol";
-import {YVTokenMock} from "./mocks/YVTokenMock.sol";
-
 import {ZeroStateDai} from "./shared/ZeroState.sol";
 
 import {Exp64x64} from "../contracts/Exp64x64.sol";
@@ -19,7 +15,7 @@ import {YieldMath} from "../contracts/YieldMath.sol";
 
 
 abstract contract WithLiquidity is ZeroStateDai {
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         base.mint(address(pool), INITIAL_YVDAI);
 
@@ -54,7 +50,7 @@ contract Mint__ZeroState is ZeroStateDai {
         pool.mint(bob, bob, 0, MAX);
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI);
-        (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -76,7 +72,7 @@ contract Mint__ZeroState is ZeroStateDai {
 
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI / 2);
-        (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -93,7 +89,7 @@ contract Mint__ZeroState is ZeroStateDai {
         vm.prank(address(alice));
         pool.sync();
 
-        (uint112 baseBal, uint112 fyTokenBal, uint32 unused1) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -106,7 +102,6 @@ contract Mint__WithLiquidity is WithLiquidity {
         uint256 expectedMint = (pool.totalSupply() / (fyToken.balanceOf(address(pool)))) * 1e18;
         uint256 expectedBaseIn = (base.balanceOf(address(pool)) * expectedMint) / pool.totalSupply();
 
-        uint256 baseTokensBefore = base.balanceOf(bob);
         uint256 poolTokensBefore = pool.balanceOf(bob);
 
         base.mint(address(pool), expectedBaseIn + 1e18); // send an extra wad of base
@@ -115,15 +110,15 @@ contract Mint__WithLiquidity is WithLiquidity {
         vm.startPrank(alice);
         pool.mint(bob, bob, 0, MAX);
 
-        // uint256 minted = pool.balanceOf(bob) - poolTokensBefore;
+        uint256 minted = pool.balanceOf(bob) - poolTokensBefore;
 
-        // almostEqual(minted, expectedMint, fyTokenIn / 10000);
-        // almostEqual(base.balanceOf(bob), WAD + bobYVInitialBalance, fyTokenIn / 10000);
+        almostEqual(minted, expectedMint, fyTokenIn / 10000);
+        almostEqual(base.balanceOf(bob), WAD + bobYVInitialBalance, fyTokenIn / 10000);
 
-        // (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
 
-        // require(baseBal == pool.getBaseBalance());
-        // require(fyTokenBal == pool.getFYTokenBalance());
+        require(baseBal == pool.getBaseBalance());
+        require(fyTokenBal == pool.getFYTokenBalance());
     }
 
 }
@@ -164,7 +159,7 @@ contract Burn__WithLiquidity is WithLiquidity {
         almostEqual(baseOut, expectedBaseOut, baseOut / 10000);
         almostEqual(fyTokenOut, expectedFYTokenOut, fyTokenOut / 10000);
 
-        (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
         require(base.balanceOf(bob) - bobYVInitialBalance == baseOut);

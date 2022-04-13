@@ -30,13 +30,6 @@ abstract contract ZeroState is TestCore {
     using Math64x64 for uint256;
     using Exp64x64 for uint128;
 
-    uint256 public constant aliceYVInitialBalance = 1000 * 1e18;
-    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e18;
-
-
-    uint256 public constant initialFYTokens = 0;
-    uint256 public constant initialBase = 0;
-
     string public baseName;
     string public baseSymbol;
     uint8 public baseDecimals;
@@ -65,22 +58,56 @@ abstract contract ZeroState is TestCore {
         // setup users
         alice = address(1);
         vm.label(address(alice), "alice");
-        base.mint(alice, aliceYVInitialBalance);
-
         bob = address(2);
         vm.label(address(bob), "bob");
-        base.mint(bob, bobYVInitialBalance);
+
     }
 }
 
 abstract contract ZeroStateDai is ZeroState {
     // used in 2 test suites __WithLiquidity
 
+    uint256 public constant aliceYVInitialBalance = 1000 * 1e18;
+    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e18;
+
+
+    uint256 public constant initialFYTokens = 1_500_000 * 1e18;
+    uint256 public constant initialBase = 1_100_000 * 1e18;
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        base.mint(alice, aliceYVInitialBalance);
+        base.mint(bob, bobYVInitialBalance);
+
+    }
+
     ZeroStateParams public zeroStateParams = ZeroStateParams(
         "yvDAI",
         "Yearn Vault DAI",
         18,
         "fyYVDai1",
+        "fyToken yvDAI maturity 1"
+    );
+
+    constructor() ZeroState(zeroStateParams) {}
+
+}
+abstract contract ZeroStateUSDC is ZeroState {
+    // used in 2 test suites __WithLiquidity
+
+    uint256 public constant aliceYVInitialBalance = 1000 * 1e6;
+    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e6;
+
+
+    uint256 public constant initialFYTokens = 1_500_000 * 1e6;
+    uint256 public constant initialBase = 1_100_000 * 1e6;
+
+    ZeroStateParams public zeroStateParams = ZeroStateParams(
+        "yvUSDC",
+        "Yearn Vault USDC",
+        6,
+        "fyYVUSDC1",
         "fyToken yvUSDC maturity 1"
     );
 

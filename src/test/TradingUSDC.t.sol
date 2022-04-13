@@ -99,7 +99,7 @@ pragma solidity >=0.8.13;
 //         uint256 bobBaseAfter = base.balanceOf(address(bob));
 
 //         uint256 baseOut = base.balanceOf(address(bob)) - bobBaseBefore;
-//         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+//         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
 //         require(baseBal == pool.getBaseBalance());
 //         require(fyTokenBal == pool.getFYTokenBalance());
 //     }
@@ -123,14 +123,14 @@ pragma solidity >=0.8.13;
 
 //         bob.pool().sellFYToken(address(bob), 0);
 
-//         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+//         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
 //         require(baseBal == pool.getBaseBalance());
 //         require(fyTokenBal == pool.getFYTokenBalance());
 //     }
 
 //     function testUnit_tradeUSDC04() public {
 //         console.log("buys a certain amount base for fyToken");
-//         (uint112 baseBalBefore, uint112 fyTokenBalBefore, uint32 unused) = pool.getCache();
+//         (uint112 baseBalBefore, uint112 fyTokenBalBefore,) = pool.getCache();
 
 //         uint256 userBaseBefore = base.balanceOf(address(alice));
 //         uint128 baseOut = uint128(1000 * 1e6);
@@ -154,7 +154,7 @@ pragma solidity >=0.8.13;
 
 //         bob.pool().buyBase(address(bob), uint128(baseOut), type(uint128).max);
 
-//         (uint112 baseBal, uint112 fyTokenBal, uint32 unused1) = pool.getCache();
+//         (uint112 baseBal, uint112 fyTokenBal,1) = pool.getCache();
 //         uint256 fyTokenIn = fyTokenBal - fyTokenBalBefore;
 //         uint256 fyTokenChange = pool.getFYTokenBalance() - fyTokenBal;
 
@@ -162,7 +162,7 @@ pragma solidity >=0.8.13;
 
 //         almostEqual(fyTokenIn, expectedFYTokenIn, 1);
 
-//         (uint112 baseBalAfter, uint112 fyTokenBalAfter, uint32 unused2) = pool.getCache();
+//         (uint112 baseBalAfter, uint112 fyTokenBalAfter,2) = pool.getCache();
 
 //         require(baseBalAfter == pool.getBaseBalance());
 //         require(fyTokenBalAfter + fyTokenChange == pool.getFYTokenBalance());
@@ -187,7 +187,7 @@ pragma solidity >=0.8.13;
 //         alice.pool().buyBase(address(bob), baseOut, uint128(MAX));
 //         require(base.balanceOf(address(bob)) == userBaseBefore + baseOut);
 
-//         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+//         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
 //         require(baseBal == pool.getBaseBalance());
 //         require(fyTokenBal != pool.getFYTokenBalance());
 
@@ -228,7 +228,7 @@ pragma solidity >=0.8.13;
 //         uint256 fyTokenOut = fyToken.balanceOf(address(bob)) - userFYTokenBefore;
 //         require(base.balanceOf(address(alice)) == 0, "'From' wallet should have no base tokens");
 //         require(fyTokenOut == expectedFYTokenOut);
-//         (uint112 baseBal, uint112 fyTokenBal, uint32 unused) = pool.getCache();
+//         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
 //         require(baseBal == pool.getBaseBalance());
 //         require(fyTokenBal == pool.getFYTokenBalance());
 //     }
@@ -253,7 +253,7 @@ pragma solidity >=0.8.13;
 
 //         alice.pool().sellBase(address(bob), 0);
 
-//         (uint112 baseBalAfter, uint112 fyTokenBalAfter, uint32 unused2) = pool.getCache();
+//         (uint112 baseBalAfter, uint112 fyTokenBalAfter,2) = pool.getCache();
 
 //         require(baseBalAfter == pool.getBaseBalance());
 //         require(fyTokenBalAfter == pool.getFYTokenBalance());
@@ -261,7 +261,7 @@ pragma solidity >=0.8.13;
 
 //     function testUnit_tradeUSDC10() public {
 //         console.log("buys a certain amount of fyTokens with base");
-//         (uint112 baseCachedBefore, uint112 unused1, uint32 unused2) = pool.getCache();
+//         (uint112 baseCachedBefore,,) = pool.getCache();
 //         uint256 userFYTokenBefore = fyToken.balanceOf(address(bob));
 //         uint128 fyTokenOut = uint128(1e6);
 
@@ -285,7 +285,7 @@ pragma solidity >=0.8.13;
 
 //         alice.pool().buyFYToken(address(bob), fyTokenOut, uint128(MAX));
 
-//         (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent, uint32 unused4) = pool.getCache();
+//         (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent,4) = pool.getCache();
 
 //         uint256 baseIn = baseCachedCurrent - baseCachedBefore;
 //         uint256 baseChange = pool.getBaseBalance() - baseCachedCurrent;
@@ -313,7 +313,7 @@ pragma solidity >=0.8.13;
 //         console.log("donates base and buys fyToken");
 //         uint256 baseBalances = pool.getBaseBalance();
 //         uint256 fyTokenBalances = pool.getFYTokenBalance();
-//         (uint112 baseCachedBefore, uint112 unused1, uint32 unused2) = pool.getCache();
+//         (uint112 baseCachedBefore,,) = pool.getCache();
 
 //         uint128 fyTokenOut = uint128(1e6);
 //         uint128 baseDonation = uint128(1e6);
@@ -322,7 +322,7 @@ pragma solidity >=0.8.13;
 
 //         pool.buyFYToken(address(bob), fyTokenOut, uint128(MAX));
 
-//         (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent, uint32 unused4) = pool.getCache();
+//         (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent,) = pool.getCache();
 //         uint256 baseIn = baseCachedCurrent - baseCachedBefore;
 
 //         require(baseCachedCurrent == baseBalances + baseIn);
