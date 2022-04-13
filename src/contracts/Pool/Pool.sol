@@ -46,7 +46,6 @@ import "./PoolImports.sol";
 /// Uses 64.64 bit math under the hood for precision and reduced gas usage.
 /// @author Orignal work by @alcueca. Adapted by @devtooligan
 contract Pool is PoolEvents, IYVPool, ERC20Permit {
-
     /* LIBRARIES
      *****************************************************************************************************************/
 
@@ -94,11 +93,12 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /// cumulativeBalancesRatio is a ratio is a cumulative ratio which is updated as follows:
     ///
-    ///          fyTokenReserves / baseReserves * number of blocks since last blockTimestampLast
+    ///          fyTokenReserves / baseReserves * number of seconds since last blockTimestampLast
     ///
     /// If the ratio is 1:1 for the first 100 blocks, then when `update` was called, this number would be 100.
     /// This is a lagging indicator and, if sync is not called in the same block, then it should be considered
-    /// along with blockTimestampLast. TODO: Consider making this private
+    /// along with blockTimestampLast. TODO: Consider making this private and preferring getCurrentCumulativeBalanceRatio
+    /// TODO: or consder adding a getter that returns both this number and the blockTimestampLast
     /// @dev Fixed point factor with 27 decimals (ray)
     uint256 public cumulativeBalancesRatio;
 
@@ -133,7 +133,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     }
 
     /* BALANCE MANAGEMENT FUNCTIONS
-     *****************************************************************************************************************//*
+     *****************************************************************************************************************/
+    /*
                   _____________________________________
                    |o o o o o o o o o o o o o o o o o|
                    |o o o o o o o o o o o o o o o o o|
@@ -166,7 +167,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /// @return Cached virtual FY token balance which is the actual balance plus the pool token supply.
     /// @return Timestamp that balances were last cached.
     function getCache()
-        external
+        public
         view
         override
         returns (
@@ -176,6 +177,20 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         )
     {
         return (baseCached, fyTokenCached, blockTimestampLast);
+    }
+
+    /// Calculates cumulativeBalancesRatio as of current timestamp.
+    /// @return currentCumulativeBalancesRatio is the ratio from last update, carried forward to current timestamp.
+    function getCurrentCumulativeRatio() external view returns (uint256) {
+        // TODO: Should we consider returning the timestamp?
+        // And if so should we consider casting the currentCumBalRat as uint112 to fit both return values in a single word?
+
+        //TODO: gas golf
+        // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
+        return
+            cumulativeBalancesRatio +
+            ((uint256(fyTokenCached) * 1e27) * (block.timestamp - blockTimestampLast)) /
+            baseCached;
     }
 
     /// Retrieve any base tokens not accounted for in the cache
@@ -219,6 +234,12 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         uint112 baseCached_,
         uint112 fyTokenCached_
     ) private {
+        if (
+            baseBalance == baseCached_ && fyBalance == fyTokenCached_
+        ) {
+            // if the balances haven't changed, then don't update anything
+            return;
+        }
         uint32 blockTimestamp = uint32(block.timestamp);
         uint32 timeElapsed;
         unchecked {
@@ -382,7 +403,11 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
-            mu = _getC();
+
+            if ((mu = _getC()) == 0) {
+                // set mu on first mint
+                revert MuZero();
+            }
         } else if (realFYTokenCached_ == 0) {
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;

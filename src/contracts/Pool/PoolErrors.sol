@@ -13,3 +13,6 @@ error AfterMaturity();
 /// The reserves have changed compared with the last cache which causes the trade to fall below or above the min/max
 /// slippage ratio selected.  This is likely a result of a sandwich attack.
 error Slippage();
+
+/// `mu` cannot be zero. When minting for the first time, `mu` is set based on the current price of base.
+error MuZero();
