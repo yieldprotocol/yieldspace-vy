@@ -7,8 +7,9 @@ import {console} from "forge-std/console.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
+import {WithExtraFYToken} from "./TradingDAI.t.sol";
 import {Pool} from "../contracts/Pool/Pool.sol";
-import {TestCore} from "./shared/TestCore.sol";
+import {ZeroStateUSDC} from "./shared/ZeroState.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
@@ -16,48 +17,54 @@ import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
 
 
-abstract contract ZeroStateUSDC is TestCore {
-    using Math64x64 for int128;
-    using Math64x64 for uint128;
-    using Math64x64 for int256;
-    using Math64x64 for uint256;
-    using Exp64x64 for uint128;
+// abstract contract ZeroStateUSDC is TestCore {
+//     using Math64x64 for int128;
+//     using Math64x64 for uint128;
+//     using Math64x64 for int256;
+//     using Math64x64 for uint256;
+//     using Exp64x64 for uint128;
 
-    uint256 public constant initialFYTokens = 1_500_000 * 1e6;
-    uint256 public constant initialBase = 1_100_000 * 1e6;
+//     uint256 public constant initialFYTokens = 1_500_000 * 1e6;
+//     uint256 public constant initialBase = 1_100_000 * 1e6;
 
-    uint256 public constant aliceYVInitialBalance = 1000 * 1e6;
-    uint256 public constant bobYVInitialBalance = 2_000_000 * 1e6;
+//     function setUp() public virtual {
+//         ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
+//         // setup mock tokens
+//         base = new YVTokenMock("Yearn Vault USDC", YVDAI, 6, address(0));
+//         base.setPrice((cNumerator * 1e6) / cDenominator);
+//         fyToken = new FYTokenMock("fyToken yvUSDC maturity 1", FYDAI, address(base), maturity);
+//         fyToken.name();
+//         fyToken.symbol();
 
+//         // setup pool
+//         pool = new Pool(address(base), address(fyToken), ts, g1, g2, mu);
 
-    function setUp() public virtual {
-        ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
-        // setup mock tokens
-        base = new YVTokenMock("Yearn Vault USDC", "SSSSSHIT", 6, address(0));
-        base.setPrice((cNumerator * 1e6) / cDenominator);
-        fyToken = new FYTokenMock("fyToken yvUSDC maturity 1", "FUCK", address(base), maturity);
-        fyToken.name();
-        fyToken.symbol();
+//         // base.mint(address(pool), initialBase);
+//         // pool.mint(address(0), address(0), 0, MAX);
+//         // fyToken.mint(address(pool), initialFYTokens);
+//         // pool.sync();
 
-        // setup pool
-        pool = new Pool(address(base), address(fyToken), ts, g1, g2, mu);
+//         // setup users
+//         alice = address(1);
+//         bob = address(2);
+//         base.mint(alice, aliceYVInitialBalance);
+//         base.mint(bob, bobYVInitialBalance);
 
+//     }
+// }
+
+abstract contract WithLiquidityUSDC is ZeroStateUSDC {
+    function setUp() public virtual override {
+        super.setUp();
         base.mint(address(pool), initialBase);
         pool.mint(address(0), address(0), 0, MAX);
         fyToken.mint(address(pool), initialFYTokens);
         pool.sync();
-
-        // setup users
-        alice = address(1);
-        bob = address(2);
-        base.mint(alice, aliceYVInitialBalance);
-        base.mint(bob, bobYVInitialBalance);
-
     }
 }
 
 
-abstract contract WithExtraFYTokenUSDC is ZeroStateUSDC {
+abstract contract WithExtraFYTokenUSDC is WithLiquidityUSDC {
     using Math64x64 for int128;
     using Math64x64 for uint128;
     using Math64x64 for int256;
@@ -73,22 +80,39 @@ abstract contract WithExtraFYTokenUSDC is ZeroStateUSDC {
     }
 }
 
-contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
+contract TradeDAI__WithLiquidityUSDC is WithLiquidityUSDC {
     using Math64x64 for uint256;
     using Math64x64 for int128;
 
     function testUnit_tradeUSDC01() public {
         console.log("sells a certain amount of fyToken for base");
         uint256 fyTokenIn = 25_000 * 1e6;
+        uint256 bobBaseBefore = base.balanceOf(address(bob));
+
+        uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
+        uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
+        int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
 
         fyToken.mint(address(pool), fyTokenIn);
+        // uint256 expectedBaseOut = YieldMath.sharesOutForFYTokenIn(
+        //     sharesReserves,
+        //     virtFYTokenBal,
+        //     uint128(fyTokenIn),
+        //     maturity - uint32(block.timestamp),
+        //     k,
+        //     g2,
+        //     c_,
+        //     mu
+        // );
 
         vm.prank(alice);
         pool.sellFYToken(address(bob), 0);
+        // uint256 bobBaseAfter = base.balanceOf(address(bob));
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
-        require(baseBal == pool.getBaseBalance());
-        require(fyTokenBal == pool.getFYTokenBalance());
+        // uint256 baseOut = base.balanceOf(address(bob)) - bobBaseBefore;
+        // (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        // require(baseBal == pool.getBaseBalance());
+        // require(fyTokenBal == pool.getFYTokenBalance());
     }
 
     function testUnit_tradeUSDC02() public {
@@ -118,10 +142,9 @@ contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
 
     function testUnit_tradeUSDC04() public {
         console.log("buys a certain amount base for fyToken");
-        (, uint112 fyTokenBalBefore,) = pool.getCache();
-        // (uint112 baseBalBefore, uint112 fyTokenBalBefore,) = pool.getCache();
+        (uint112 baseBalBefore, uint112 fyTokenBalBefore,) = pool.getCache();
 
-        uint256 userBaseBefore = base.balanceOf(address(bob));
+        uint256 userBaseBefore = base.balanceOf(address(alice));
         uint128 baseOut = uint128(1000 * 1e6);
 
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
@@ -144,7 +167,7 @@ contract TradeDAI__ZeroStateUSDC is ZeroStateUSDC {
         vm.prank(bob);
         pool.buyBase(address(bob), uint128(baseOut), type(uint128).max);
 
-        (, uint112 fyTokenBal,) = pool.getCache();
+        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         uint256 fyTokenIn = fyTokenBal - fyTokenBalBefore;
         uint256 fyTokenChange = pool.getFYTokenBalance() - fyTokenBal;
 
@@ -197,7 +220,7 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYTokenUSDC {
     function testUnit_tradeUSDC07() public {
         uint128 baseIn = uint128(25000 * 1e6);
         uint256 userFYTokenBefore = fyToken.balanceOf(address(bob));
-        uint256 userBaseBalanceBefore = base.balanceOf(address(alice));
+
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
         int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
@@ -219,7 +242,7 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYTokenUSDC {
         pool.sellBase(address(bob), 0);
 
         uint256 fyTokenOut = fyToken.balanceOf(address(bob)) - userFYTokenBefore;
-        require(base.balanceOf(address(alice)) == userBaseBalanceBefore, "'From' wallet should have no base tokens");
+        require(base.balanceOf(address(alice)) == 0, "'From' wallet should have no base tokens");
         require(fyTokenOut == expectedFYTokenOut);
         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());

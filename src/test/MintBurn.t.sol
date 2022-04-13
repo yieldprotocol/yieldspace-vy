@@ -17,10 +17,10 @@ import {YieldMath} from "../contracts/YieldMath.sol";
 abstract contract WithLiquidity is ZeroStateDai {
     function setUp() public virtual override {
         super.setUp();
-        base.mint(address(pool), INITIAL_YVDAI);
+        base.mint(address(pool), INITIAL_BASE * 10**(base.decimals()));
 
         pool.mint(address(alice), bob, 0, MAX);
-        uint256 additionalFYToken = INITIAL_YVDAI / 9;
+        uint256 additionalFYToken = (INITIAL_BASE * 10**(base.decimals())) / 9;
 
         // Skew the balances without using trading functions
         fyToken.mint(address(pool), additionalFYToken);

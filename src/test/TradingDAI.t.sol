@@ -11,11 +11,11 @@ import {YieldMath} from "../contracts/YieldMath.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
-import {WithLiquidity} from "./MintBurn.t.sol";
 import {Pool} from "../contracts/Pool/Pool.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
 import {ZeroStateDai} from "./shared/ZeroState.sol";
+import {WithLiquidity} from "./MintBurn.t.sol";
 
 
 abstract contract WithExtraFYToken is WithLiquidity {
@@ -117,10 +117,7 @@ contract TradeDAI__ZeroState is WithLiquidity {
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
         int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e18).fromUInt());
 
-        console.log(initialFYTokens);
-        console.log(fyToken.balanceOf(address(pool)));
         fyToken.mint(address(pool), initialFYTokens); // send some tokens to the pool
-        console.log(fyToken.balanceOf(address(pool)));
 
         uint256 expectedFYTokenIn = YieldMath.fyTokenInForSharesOut(
             sharesReserves,
