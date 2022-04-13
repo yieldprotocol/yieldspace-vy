@@ -58,7 +58,6 @@ abstract contract TestCore {
 
     uint256 public constant cNumerator = 11;
     uint256 public constant cDenominator = 10;
-    int128 public c;
 
     uint256 public constant muNumerator = 105;
     uint256 public constant muDenominator = 100;

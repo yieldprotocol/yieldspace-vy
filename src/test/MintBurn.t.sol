@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.8.13;
 
+/*
+  __     ___      _     _
+  \ \   / (_)    | |   | | ████████╗███████╗███████╗████████╗███████╗
+   \ \_/ / _  ___| | __| | ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
+    \   / | |/ _ \ |/ _` |    ██║   █████╗  ███████╗   ██║   ███████╗
+     | |  | |  __/ | (_| |    ██║   ██╔══╝  ╚════██║   ██║   ╚════██║
+     |_|  |_|\___|_|\__,_|    ██║   ███████╗███████║   ██║   ███████║
+      yieldprotocol.com       ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+
+*/
+
 import "forge-std/stdlib.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
@@ -19,7 +30,8 @@ abstract contract WithLiquidity is ZeroStateDai {
         super.setUp();
         base.mint(address(pool), INITIAL_BASE * 10**(base.decimals()));
 
-        pool.mint(address(alice), bob, 0, MAX);
+        pool.mint(alice, bob, 0, MAX);
+        base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
         uint256 additionalFYToken = (INITIAL_BASE * 10**(base.decimals())) / 9;
 
         // Skew the balances without using trading functions
@@ -48,6 +60,7 @@ contract Mint__ZeroState is ZeroStateDai {
         );
 
         pool.mint(bob, bob, 0, MAX);
+        base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI);
         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
@@ -86,7 +99,7 @@ contract Mint__ZeroState is ZeroStateDai {
         vm.expectEmit(false, false, false, true);
         emit Sync(uint112(INITIAL_YVDAI), uint112(INITIAL_YVDAI / 9), 0);
 
-        vm.prank(address(alice));
+        vm.prank(alice);
         pool.sync();
 
         (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
@@ -143,14 +156,14 @@ contract Burn__WithLiquidity is WithLiquidity {
         vm.expectEmit(true, true, true, true);
         emit Liquidity(
             maturity,
-            address(alice),
+            alice,
             bob,
-            address(charlie),
+            charlie,
             int256(expectedBaseOut),
             int256(expectedFYTokenOut),
             -int256(lpTokensIn)
         );
-        vm.prank(address(alice));
+        vm.prank(alice);
         pool.burn(bob, address(charlie), 0, MAX);
 
 

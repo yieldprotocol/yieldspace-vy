@@ -42,7 +42,7 @@ import "./PoolImports.sol";
 /// A Yieldspace AMM implementation for pools providing liquidity for fyTokens and tokenized vault tokens.
 /// https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw
 /// @title  Pool.sol
-/// @dev Instantiate pool with Yearn token and associated fyToken.
+/// @dev Deploy pool with Yearn token and associated fyToken.
 /// Uses 64.64 bit math under the hood for precision and reduced gas usage.
 /// @author Orignal work by @alcueca. Adapted by @devtooligan
 contract Pool is PoolEvents, IYVPool, ERC20Permit {
@@ -74,7 +74,6 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /* IMMUTABLES
      *****************************************************************************************************************/
 
-    int128 public immutable mu; //                     The normalization coefficient -- which is the initial c value
     int128 public immutable override ts; //            1 / seconds in 10 years, in 64.64
     int128 public immutable override g1; //            To be used when selling base to the pool
     int128 public immutable override g2; //            To be used when selling fyToken to the pool
@@ -90,7 +89,18 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     uint112 private baseCached; //                     uses single storage slot, accessible via getCache
     uint112 private fyTokenCached; //                  uses single storage slot, accessible via getCache
     uint32 private blockTimestampLast; //              uses single storage slot, accessible via getCache
-    uint256 public cumulativeBalancesRatio; //         Fixed point factor with 27 decimals (ray)
+
+    int128 public mu; //                               The normalization coefficient -- which is the initial c value
+
+    /// cumulativeBalancesRatio is a ratio is a cumulative ratio which is updated as follows:
+    ///
+    ///          fyTokenReserves / baseReserves * number of blocks since last blockTimestampLast
+    ///
+    /// If the ratio is 1:1 for the first 100 blocks, then when `update` was called, this number would be 100.
+    /// This is a lagging indicator and, if sync is not called in the same block, then it should be considered
+    /// along with blockTimestampLast. TODO: Consider making this private
+    /// @dev Fixed point factor with 27 decimals (ray)
+    uint256 public cumulativeBalancesRatio;
 
     /* CONSTRUCTOR
      *****************************************************************************************************************/
@@ -100,8 +110,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         address fyToken_,
         int128 ts_,
         int128 g1_,
-        int128 g2_,
-        int128 mu_
+        int128 g2_
     )
         ERC20Permit(
             string(abi.encodePacked(IERC20Metadata(fyToken_).name(), " LP")),
@@ -286,7 +295,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /*mintWithBase
                                                                                              V
                                   ┌───────────────────────────────┐                   \            /
-                                  │                               │                 `    _......._     '   GM!
+                                  │                               │                 `    _......._     '   gm!
                                  \│                               │/                  .-:::::::::::-.
                                  \│                               │/             `   :    __    ____ :   /
                                   │         mintWithBase          │                 ::   / /   / __ \::
@@ -373,7 +382,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
-            //todo: set mu here
+            mu = _getC();
         } else if (realFYTokenCached_ == 0) {
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;
