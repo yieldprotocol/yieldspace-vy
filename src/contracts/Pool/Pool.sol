@@ -101,33 +101,33 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     uint112 private baseCached; //                     uses single storage slot, accessible via getCache
     uint112 private fyTokenCached; //                  uses single storage slot, accessible via getCache
 
-    ///  __                            ___         ___  __       ___    __             __  ___
-    /// /  ` |  |  |\/| |  | |     /\   |  | \  / |__  |__)  /\   |  | /  \ |     /\  /__`  |
-    /// \__, \__/  |  | \__/ |___ /~~\  |  |  \/  |___ |  \ /~~\  |  | \__/ |___ /~~\ .__/  |
-    /// a LAGGING, time weighted sum of the reserves ratio which is updated as follows:
+    ///  __                __       ___             __  ___
+    /// /  ` |  |  |\/|   |__)  /\   |   |     /\  /__`  |
+    /// \__, \__/  |  |   |  \ /~~\  |   |___ /~~\ .__/  |
+    /// CumulativeRatioLast is a LAGGING, time weighted sum of the reserves ratio which is updated as follows:
     ///
-    ///   cumulativeRatioLast += old fyTokenReserves / old baseReserves * seconds elapsed since blockTimestampLast
+    ///   cumRatLast += old fyTokenReserves / old baseReserves * seconds elapsed since blockTimestampLast
     ///
     /// Example:
     ///   First mint creates a ratio of 1:1.
     ///   300 seconds later a trade occurs:
-    ///     - cumulativeRatioLast is updated: 0 + 1/1 * 300 == 300
+    ///     - cumRatLast is updated: 0 + 1/1 * 300 == 300
     ///     - baseCached and fyTokenCached are updated with the new reserves amounts.
     ///     - This causes the ratio to skew to 1.1 / 1.
     ///   200 seconds later another trade occurs:
-    ///     - note: During this 200 seconds, cumulativeRatioLast == 300, which represents the "last" updated amount.
-    ///     - cumulativeRatioLast is updated: 300 + 1.1 / 1 * 200 == 520
+    ///     - note: During this 200 seconds, cumRatLast == 300, which represents the "last" updated amount.
+    ///     - cumRatLast is updated: 300 + 1.1 / 1 * 200 == 520
     ///     - baseCached and fyTokenCached updated accordingly...etc.
     ///
-    /// The current reserves ratio (fyTokenReserves / baseReserves) is not included in cumulativeRatioLast.
+    /// The current reserves ratio (fyTokenReserves / baseReserves) is not included in cumRatLast.
     /// Only when the reserves ratio change again in the future, will the current ratio get applied.
     /// @dev Footgun alert!  Be careful with this number. While important for internal calculations, it is
     /// meaningless without blockTimestampLast and probably not what you need.
-    /// Use cumulativeRatioCurrent() for consumption as a TWAP observation.
+    /// Use cumRatCurrent() for consumption as a TWAR observation.
     /// @return a fixed point factor with 27 decimals (ray).
-    //TODO: consider changing visibility private to reduce risk of misuse, we could remove these warnings.
-    uint256 public cumulativeRatioLast;
-
+    // TODO: consider changing visibility private to reduce risk of misuse, we could remove these warnings
+    // and move the explanation to the update fn.
+    uint256 public cumRatLast;
 
     /* CONSTRUCTOR
      *****************************************************************************************************************/
@@ -153,8 +153,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         }
 
         ts = ts_;
-        g1 = g1_;
-        g2 = g2_;
+
+        setFees(g1_, g2_);
 
         scaleFactor = uint96(10**(18 - uint96(decimals)));
 
@@ -859,7 +859,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         return baseIn;
     }
 
-    /* BALANCE MANAGEMENT FUNCTIONS
+    /* BALANCES MANAGEMENT AND ADMINISTRATIVE FUNCTIONS
      *****************************************************************************************************************/
     /*
                   _____________________________________
@@ -906,14 +906,17 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         return (baseCached, fyTokenCached, blockTimestampLast);
     }
 
-    /// Calculates cumulativeRatioLast as of current timestamp.
-    /// @return the cumulative ratio up to the current timestamp as ray
-    function cumulativeRatioCurrent() external view returns (uint256) {
+    /// Calculates cumulative ratio as of current timestamp.  Can be consumed for TWAR observations.
+    /// @return cumRatCurrent_ is the cumulative ratio up to the current timestamp as ray.
+    /// @return blockTimestampCurrent is the current block timestamp that the cumRatCurrent was computed with.
+    function cumRatCurrent() external view returns (uint256 cumRatCurrent_, uint256 blockTimestampCurrent) {
         //TODO: gas golf
+        blockTimestampCurrent = block.timestamp;
+
         // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
-        return
-            cumulativeRatioLast +
-            ((uint256(fyTokenCached) * 1e27) * (block.timestamp - blockTimestampLast)) /
+        cumRatCurrent_ =
+            cumRatLast +
+            ((uint256(fyTokenCached) * 1e27) * (blockTimestampCurrent - blockTimestampLast)) /
             baseCached;
     }
 
@@ -936,6 +939,13 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /// Updates the cache to match the actual balances.
     function sync() external {
         _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
+    }
+
+    function setFees(int128 g1_, int128 g2_) public {
+        // TODO: Do we need to validate these?
+        g1 = g1_;
+        g2 = g2_;
+        emit FeesSet(g1_, g2_);
     }
 
     /// Returns the base balance
@@ -976,7 +986,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         baseCached = baseBalance.u112();
         fyTokenCached = fyBalance.u112();
 
-        uint256 oldCumulativeRatioLast = cumulativeRatioLast;
+        uint256 oldCumulativeRatioLast = cumRatLast;
 
         if (timeElapsed == 0 || fyTokenCached_ == 0 || baseCached_ == 0) {
             // If timeElapsed or fyTokenCached == 0 then nothing will be added to the cumulativeRatio.
@@ -987,7 +997,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
             return;
         }
 
-        // Update cumulativeRatioLast
+        // Update cumRatLast
 
         // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
         uint256 scaledFYTokenCached = uint256(fyTokenCached_) * 1e27;
@@ -995,7 +1005,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
         if (oldCumulativeRatioLast != newCumulativeRatioLast) {
             // No need to update if ratio unchanged.
-            cumulativeRatioLast = newCumulativeRatioLast;
+            cumRatLast = newCumulativeRatioLast;
             blockTimestampLast = blockTimestamp;
         }
 
