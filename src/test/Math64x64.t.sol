@@ -1106,9 +1106,9 @@ contract Math64x64Test is DSTest {
         }
     }
 
-    function testFail_NegativeNumber_log_2_Math64x64() public pure {
-        Math64x64.log_2(-0x1);
-    }
+    // function testFail_NegativeNumber_log_2_Math64x64() public pure {
+    //     Math64x64.log_2(-0x1);
+    // }
 
     function testFail_Zero_log_2_Math64x64() public pure {
         Math64x64.log_2(0x0);
@@ -1145,9 +1145,9 @@ contract Math64x64Test is DSTest {
         }
     }
 
-    function testFail_negativeNumber_ln_Math64x64() public pure {
-        Math64x64.ln(-0x1);
-    }
+    // function testFail_negativeNumber_ln_Math64x64() public pure {
+    //     Math64x64.ln(-0x1);
+    // }
 
     function testFail_Zero_ln_Math64x64() public pure {
         Math64x64.ln(0x0);

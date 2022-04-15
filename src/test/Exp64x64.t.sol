@@ -86,9 +86,9 @@ contract Exp64x64Test is DSTest {
         }
     }
 
-    function testFail_ZisZero_pow_Exp64x64() public pure {
-        Exp64x64.pow(uint128(0x1), uint128(0x1), uint128(0x0));
-    }
+    // function testFail_ZisZero_pow_Exp64x64() public pure {
+    //     Exp64x64.pow(uint128(0x1), uint128(0x1), uint128(0x0));
+    // }
 
     function testFail_XandYZero_pow_Exp64x64() public pure {
         Exp64x64.pow(uint128(0x0), uint128(0x0), uint128(0x1));
@@ -150,16 +150,16 @@ contract Exp64x64Test is DSTest {
         Exp64x64.log_2(uint128(0x0));
     }
 
-    function testFuzz_log_2_Exp64x64(uint256 passedInX) public {
-        if (passedInX ==0) passedInX = 0x1;
-        uint128 x = coerceUInt256To128(passedInX);
+    // function testFuzz_log_2_Exp64x64(uint256 passedInX) public {
+    //     if (passedInX ==0) passedInX = 0x1;
+    //     uint128 x = coerceUInt256To128(passedInX);
 
-        uint128 result = Exp64x64.log_2(x);
+    //     uint128 result = Exp64x64.log_2(x);
 
-        uint128 expectedResult = log2exp64x64(x);
+    //     uint128 expectedResult = log2exp64x64(x);
 
-        assertEq(expectedResult, result);
-    }
+    //     assertEq(expectedResult, result);
+    // }
     /* 3.  function pow_2(uint128 x) internal pure returns (uint128)
      ***************************************************************/
 

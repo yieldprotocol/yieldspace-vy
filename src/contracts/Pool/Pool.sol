@@ -87,8 +87,6 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     IYVToken public immutable base;
     IFYToken public immutable fyToken;
 
-    int128 public immutable g1; //            To be used when selling base to the pool (64.64)
-    int128 public immutable g2; //            To be used when selling fyToken to the pool (64.64)
     int128 public immutable ts; //            1 / seconds in 10 years (64.64)
     uint32 public immutable maturity;
     uint96 public immutable scaleFactor; //   Used to scale up to 18 decimals (not 64.64)
@@ -97,6 +95,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /* STORAGE
      *****************************************************************************************************************/
 
+    int128 public g1; //            To be used when selling base to the pool (64.64)
+    int128 public g2; //            To be used when selling fyToken to the pool (64.64)
     uint32 private blockTimestampLast; //              uses single storage slot, accessible via getCache
     uint112 private baseCached; //                     uses single storage slot, accessible via getCache
     uint112 private fyTokenCached; //                  uses single storage slot, accessible via getCache
@@ -125,7 +125,9 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /// meaningless without blockTimestampLast and probably not what you need.
     /// Use cumulativeRatioCurrent() for consumption as a TWAP observation.
     /// @return a fixed point factor with 27 decimals (ray).
-    uint256 public cumulativeRatioLast; //TODO: consider making private to reduce risk of misuse, we could remove these warnings
+    //TODO: consider changing visibility private to reduce risk of misuse, we could remove these warnings.
+    uint256 public cumulativeRatioLast;
+
 
     /* CONSTRUCTOR
      *****************************************************************************************************************/
@@ -594,8 +596,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /* buyBase
 
-                         I want `uint128 tokenOut` worth of base tokens.
-             _______     I've already approved fyTokens to the pool so so take what you need for the swap.
+                         I want to buy `uint128 tokenOut` worth of base tokens.
+             _______     I've already approved fyTokens to the pool so take what you need for the swap.
             /   GUY \         .:::::::::::::::::.
      (^^^|   \===========    :  _______  __   __ :                 ┌─────────┐
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
@@ -767,13 +769,13 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /*buyFYToken
 
-                         I want `uint128 fyTokenOut` worth of fyTokens.
+                         I want to buy `uint128 fyTokenOut` worth of fyTokens.
              _______     I've approved base for you to take what you need for the swap.
             /   GUY \                                                 ┌─────────┐
      (^^^|   \===========  ┌──────────────┐                           │no       │
       \(\/    | _  _ |     │$            $│                           │lifeguard│
        \ \   (. o  o |     │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
-        \ \   |   ~  |     │ │$            $│           ok Guy!         │     │    =======+
+        \ \   |   ~  |     │ │$            $│           ok, Guy!        │     │    =======+
         \  \   \ == /      │ │   B A S E    │                      _____│_____│______    |+
          \  \___|  |___    │$│    ????      │                  .-'"___________________`-.|+
           \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+
