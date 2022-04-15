@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.13;
-/*
+
+import "./PoolImports.sol"; /*
+
+TODO:
+test gas
+change g1/g2 to storage -- store w
+
+
+make an abstract Pool4626
+then make a PoolYV inherits that and overwrites getC()
+^^ maybe break up _getC into _getCurrentBasePrice and _getC
+yieldcurity review
+
   __     ___      _     _
   \ \   / (_)    | |   | |  ██████╗  ██████╗  ██████╗ ██╗        ███████╗ ██████╗ ██╗
    \ \_/ / _  ___| | __| |  ██╔══██╗██╔═══██╗██╔═══██╗██║        ██╔════╝██╔═══██╗██║
@@ -13,7 +25,7 @@ pragma solidity >=0.8.13;
                                                 │no       │
                                                 │lifeguard│
                                                 └─┬─────┬─┘       ==+
-                             I'm Poolie!          │     │    =======+
+                    be cool, stay in pool         │     │    =======+
                                              _____│_____│______    |+
                                       \  .-'"___________________`-.|+
                                         ( .'"                   '-.)+
@@ -37,16 +49,14 @@ pragma solidity >=0.8.13;
                                         '-..___|_..=:` `-:=.._|___..-'
 */
 
-import "./PoolImports.sol";
-
-/// A Yieldspace AMM implementation for pools providing liquidity for fyTokens and tokenized vault tokens.
-/// https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw
+/// A Yieldspace AMM implementation for pools which provide liquidity and trading of fyTokens vs base tokens.
+/// The base tokens in this implementation are erc4626 compliant tokenized vaults.
+/// See whitepaper and derived formulas: https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw
 /// @title  Pool.sol
 /// @dev Deploy pool with Yearn token and associated fyToken.
 /// Uses 64.64 bit math under the hood for precision and reduced gas usage.
-/// @author Orignal work by @alcueca. Adapted by @devtooligan
+/// @author Orignal work by @alcueca. Adapted by @devtooligan.  Maths and whitepaper by @aniemburg.
 contract Pool is PoolEvents, IYVPool, ERC20Permit {
-
     /* LIBRARIES
      *****************************************************************************************************************/
 
@@ -74,33 +84,48 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /* IMMUTABLES
      *****************************************************************************************************************/
 
-    int128 public immutable override ts; //            1 / seconds in 10 years, in 64.64
-    int128 public immutable override g1; //            To be used when selling base to the pool
-    int128 public immutable override g2; //            To be used when selling fyToken to the pool
-    uint32 public immutable override maturity;
-    uint96 public immutable override scaleFactor; //   Scale up to 18 decimal tokens to get the right precision
+    IYVToken public immutable base;
+    IFYToken public immutable fyToken;
 
-    IYVToken public immutable override base;
-    IFYToken public immutable override fyToken;
+    int128 public immutable g1; //            To be used when selling base to the pool (64.64)
+    int128 public immutable g2; //            To be used when selling fyToken to the pool (64.64)
+    int128 public immutable ts; //            1 / seconds in 10 years (64.64)
+    uint32 public immutable maturity;
+    uint96 public immutable scaleFactor; //   Used to scale up to 18 decimals (not 64.64)
+    int128 public immutable mu; //            The normalization coefficient, the initial c value, in 64.64
 
     /* STORAGE
      *****************************************************************************************************************/
 
+    uint32 private blockTimestampLast; //              uses single storage slot, accessible via getCache
     uint112 private baseCached; //                     uses single storage slot, accessible via getCache
     uint112 private fyTokenCached; //                  uses single storage slot, accessible via getCache
-    uint32 private blockTimestampLast; //              uses single storage slot, accessible via getCache
 
-    int128 public mu; //                               The normalization coefficient -- which is the initial c value
-
-    /// cumulativeBalancesRatio is a ratio is a cumulative ratio which is updated as follows:
+    ///  __                            ___         ___  __       ___    __             __  ___
+    /// /  ` |  |  |\/| |  | |     /\   |  | \  / |__  |__)  /\   |  | /  \ |     /\  /__`  |
+    /// \__, \__/  |  | \__/ |___ /~~\  |  |  \/  |___ |  \ /~~\  |  | \__/ |___ /~~\ .__/  |
+    /// a LAGGING, time weighted sum of the reserves ratio which is updated as follows:
     ///
-    ///          fyTokenReserves / baseReserves * number of blocks since last blockTimestampLast
+    ///   cumulativeRatioLast += old fyTokenReserves / old baseReserves * seconds elapsed since blockTimestampLast
     ///
-    /// If the ratio is 1:1 for the first 100 blocks, then when `update` was called, this number would be 100.
-    /// This is a lagging indicator and, if sync is not called in the same block, then it should be considered
-    /// along with blockTimestampLast. TODO: Consider making this private
-    /// @dev Fixed point factor with 27 decimals (ray)
-    uint256 public cumulativeBalancesRatio;
+    /// Example:
+    ///   First mint creates a ratio of 1:1.
+    ///   300 seconds later a trade occurs:
+    ///     - cumulativeRatioLast is updated: 0 + 1/1 * 300 == 300
+    ///     - baseCached and fyTokenCached are updated with the new reserves amounts.
+    ///     - This causes the ratio to skew to 1.1 / 1.
+    ///   200 seconds later another trade occurs:
+    ///     - note: During this 200 seconds, cumulativeRatioLast == 300, which represents the "last" updated amount.
+    ///     - cumulativeRatioLast is updated: 300 + 1.1 / 1 * 200 == 520
+    ///     - baseCached and fyTokenCached updated accordingly...etc.
+    ///
+    /// The current reserves ratio (fyTokenReserves / baseReserves) is not included in cumulativeRatioLast.
+    /// Only when the reserves ratio change again in the future, will the current ratio get applied.
+    /// @dev Footgun alert!  Be careful with this number. While important for internal calculations, it is
+    /// meaningless without blockTimestampLast and probably not what you need.
+    /// Use cumulativeRatioCurrent() for consumption as a TWAP observation.
+    /// @return a fixed point factor with 27 decimals (ray).
+    uint256 public cumulativeRatioLast; //TODO: consider making private to reduce risk of misuse, we could remove these warnings
 
     /* CONSTRUCTOR
      *****************************************************************************************************************/
@@ -130,128 +155,27 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         g2 = g2_;
 
         scaleFactor = uint96(10**(18 - uint96(decimals)));
-    }
 
-    /* BALANCE MANAGEMENT FUNCTIONS
-     *****************************************************************************************************************//*
-                  _____________________________________
-                   |o o o o o o o o o o o o o o o o o|
-                   |o o o o o o o o o o o o o o o o o|
-                   ||_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_||
-                   || | | | | | | | | | | | | | | | ||
-                   |o o o o o o o o o o o o o o o o o|
-                   |o o o o o o o o o o o o o o o o o|
-                   |o o o o o o o o o o o o o o o o o|
-                   |o o o o o o o o o o o o o o o o o|
-                  _|o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o|_
-                          "Poolie's Abacus" - ejm */
-
-    /// Returns the base balance
-    function getBaseBalance() public view override returns (uint112) {
-        return _getBaseBalance();
-    }
-
-    /// Returns the base current price
-    function getBaseCurrentPrice() public view returns (uint256) {
-        return base.pricePerShare();
-    }
-
-    /// Returns the "virtual" fyToken balance, which is the actual balance plus the pool token supply.
-    function getFYTokenBalance() public view override returns (uint112) {
-        return _getFYTokenBalance();
-    }
-
-    /// Returns the cached balances & last updated timestamp.
-    /// @return Cached base token balance.
-    /// @return Cached virtual FY token balance which is the actual balance plus the pool token supply.
-    /// @return Timestamp that balances were last cached.
-    function getCache()
-        external
-        view
-        override
-        returns (
-            uint112,
-            uint112,
-            uint32
-        )
-    {
-        return (baseCached, fyTokenCached, blockTimestampLast);
-    }
-
-    /// Retrieve any base tokens not accounted for in the cache
-    function retrieveBase(address to) external override returns (uint128 retrieved) {
-        retrieved = _getBaseBalance() - baseCached; // Cache can never be above balances
-        base.safeTransfer(to, retrieved);
-        // Now the current balances match the cache, so no need to update the TWAR
-    }
-
-    /// Retrieve any fyTokens not accounted for in the cache
-    function retrieveFYToken(address to) external override returns (uint128 retrieved) {
-        retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
-        fyToken.safeTransfer(to, retrieved);
-        // Now the balances match the cache, so no need to update the TWAR
-    }
-
-    /// Updates the cache to match the actual balances.
-    function sync() external {
-        _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
-    }
-
-    /// Returns the base balance
-    function _getBaseBalance() internal view returns (uint112) {
-        return base.balanceOf(address(this)).u112();
-    }
-
-    /// Returns the base current price
-    function _getC() internal view returns (int128) {
-        return ((base.pricePerShare() * scaleFactor).fromUInt()).div(uint256(1e18).fromUInt());
-    }
-
-    /// Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
-    function _getFYTokenBalance() internal view returns (uint112) {
-        return (fyToken.balanceOf(address(this)) + _totalSupply).u112();
-    }
-
-    /// Update cache and, on the first call per block, ratio accumulators
-    function _update(
-        uint128 baseBalance,
-        uint128 fyBalance,
-        uint112 baseCached_,
-        uint112 fyTokenCached_
-    ) private {
-        uint32 blockTimestamp = uint32(block.timestamp);
-        uint32 timeElapsed;
-        unchecked {
-            timeElapsed = blockTimestamp - blockTimestampLast; // underflow is desired
+        if ((mu = _getC()) == 0) {
+            revert MuZero();
         }
-        uint256 cumulativeBalancesRatio_ = cumulativeBalancesRatio;
-        if (timeElapsed > 0 && baseCached_ != 0 && fyTokenCached_ != 0) {
-            // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
-            uint256 scaledFYTokenCached = uint256(fyTokenCached_) * 1e27;
-            cumulativeBalancesRatio_ += (scaledFYTokenCached * timeElapsed) / baseCached_;
-            cumulativeBalancesRatio = cumulativeBalancesRatio_;
-        }
-        baseCached = baseBalance.u112();
-        fyTokenCached = fyBalance.u112();
-        blockTimestampLast = blockTimestamp;
-        emit Sync(baseCached, fyTokenCached, cumulativeBalancesRatio_);
     }
 
     /* LIQUIDITY FUNCTIONS
 
-        ┌───────────────────────────────────────────┐
-        │  mint new life. gm!                       │
-        │  buy, sell, mint more, buy, sell -- stop  │
-        │  mature, burn. gg~                        │
-        │                                           │
-        │  "Watashinojinsei" - a haiku by Poolie    │
-        └───────────────────────────────────────────┘
+        ┌─────────────────────────────────────────────────┐
+        │  mint, new life. gm!                            │
+        │  buy, sell, mint more, trade, trade -- stop     │
+        │  mature, burn. gg~                              │
+        │                                                 │
+        │ "Watashinojinsei (My Life)" - haiku by Poolie   │
+        └─────────────────────────────────────────────────┘
 
      *****************************************************************************************************************/
 
     /*mint
                                                                                               v
-         ___                                                                            \            /
+         ___                                                                           \            /
          |_ \_/                   ┌───────────────────────────────┐
          |   |                    │                               │                 `    _......._     '   gm!
                                  \│                               │/                  .-:::::::::::-.
@@ -337,9 +261,9 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     }
 
     /// Mint liquidity tokens, with an optional internal trade to buy fyToken beforehand.
-    /// The amount of liquidity tokens is calculated from the amount of fyToken to buy from the pool,
-    /// plus the amount of unaccounted for fyToken in this contract.
-    /// The base tokens need to be present in this contract, unaccounted for.
+    /// The amount of liquidity tokens is calculated from the amount of fyTokenToBuy from the pool,
+    /// plus the amount of extra, unaccounted for fyToken in this contract.
+    /// The base tokens also need to be present in this contract, unaccounted for.
     /// @param to Wallet receiving the minted liquidity tokens.
     /// @param remainder Wallet receiving any surplus base.
     /// @param fyTokenToBuy Amount of `fyToken` being bought in the Pool, from this we calculate how much base it will be taken in.
@@ -376,13 +300,11 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
                 revert Slippage();
             }
         }
-
         // Calculate token amounts
         if (supply == 0) {
             // Initialize at 1 pool token minted per base token supplied
             baseIn = baseAvailable;
             tokensMinted = baseIn;
-            mu = _getC();
         } else if (realFYTokenCached_ == 0) {
             // Edge case, no fyToken in the Pool after initialization
             baseIn = baseAvailable;
@@ -427,20 +349,20 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     }
 
     /* burn
-                                (   (
-                                )    (
-                           (  (|   (|  )
-                        )   )\/ ( \/(( (                  ___
-                        ((  /     ))\))))\      ┌──────►  |_ \_/
-                         )\(          |  )      │         |   |
-                        /:  | __    ____/:      │
-                        ::   / /   / __ \::  ───┤
-                        ::  / /   / /_/ /::     │
-                        :: / /___/ ____/ ::     └──────►  B A S E
-                        ::/_____/_/      ::
-                         :               :
-                          `-:::::::::::-'
-                             `'''''''`
+                        (   (
+                        )    (
+                   (  (|   (|  )
+                )   )\/ ( \/(( (    gg            ___
+                ((  /     ))\))))\      ┌~~~~~~►  |_ \_/
+                 )\(          |  )      │         |   |
+                /:  | __    ____/:      │
+                ::   / /   / __ \::  ───┤
+                ::  / /   / /_/ /::     │
+                :: / /___/ ____/ ::     └~~~~~~►  B A S E
+                ::/_____/_/      ::
+                 :               :
+                  `-:::::::::::-'
+                     `'''''''`
     */
     /// Burn liquidity tokens in exchange for base and fyToken.
     /// The liquidity tokens need to be in this contract.
@@ -468,20 +390,20 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /* burnForBase
 
-                                (   (
-                                )    (
-                            (  (|   (|  )
-                         )   )\/ ( \/(( (
-                         ((  /     ))\))))\
-                          )\(          |  )
-                        /:  | __    ____/:
-                        ::   / /   / __ \::    ──────────►   B A S E
-                        ::  / /   / /_/ /::
-                        :: / /___/ ____/ ::
-                        ::/_____/_/      ::
-                         :               :
-                          `-:::::::::::-'
-                             `'''''''`
+                        (   (
+                        )    (
+                    (  (|   (|  )
+                 )   )\/ ( \/(( (    gg
+                 ((  /     ))\))))\
+                  )\(          |  )
+                /:  | __    ____/:
+                ::   / /   / __ \::   ~~~~~~~►   B A S E
+                ::  / /   / /_/ /::
+                :: / /___/ ____/ ::
+                ::/_____/_/      ::
+                 :               :
+                  `-:::::::::::-'
+                     `'''''''`
     */
     /// Burn liquidity tokens in exchange for base.
     /// The liquidity provider needs to have called `pool.approve`.
@@ -673,13 +595,13 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /* buyBase
 
                          I want `uint128 tokenOut` worth of base tokens.
-             _______     I've approved fyTokens for you to take what you need for the swap.
+             _______     I've already approved fyTokens to the pool so so take what you need for the swap.
             /   GUY \         .:::::::::::::::::.
      (^^^|   \===========    :  _______  __   __ :                 ┌─────────┐
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
        \ \   (. o  o |     ::: |    ___||  |_|  |:::               │lifeguard│
         \ \   |   ~  |     ::: |   |___ |       |:::               └─┬─────┬─┘       ==+
-        \  \   \ == /      ::: |    ___||_     _|:::    lfg!         │     │    =======+
+        \  \   \ == /      ::: |    ___||_     _|:::    can          │     │    =======+
          \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
           \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
            \            \    :        ????       :         ( .'"                   '-.)+
@@ -767,7 +689,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
       \(\/    | _  _ |      :: |       ||  | |  |::                │no       │
        \ \   (. o  o |     ::: |    ___||  |_|  |:::               │lifeguard│
         \ \   |   ~  |     ::: |   |___ |       |:::               └─┬─────┬─┘       ==+
-        \  \   \ == /      ::: |    ___||_     _|:::   I think so.   │     │    =======+
+        \  \   \ == /      ::: |    ___||_     _|:::   I think so    │     │    =======+
          \  \___|  |___    ::: |   |      |   |  :::            _____│_____│______    |+
           \ /   \__/   \    :: |___|      |___|  ::         .-'"___________________`-.|+
            \            \    :     `fyTokenIn`   :         ( .'"                   '-.)+
@@ -851,7 +773,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
      (^^^|   \===========  ┌──────────────┐                           │no       │
       \(\/    | _  _ |     │$            $│                           │lifeguard│
        \ \   (. o  o |     │ ┌────────────┴─┐                         └─┬─────┬─┘       ==+
-        \ \   |   ~  |     │ │$            $│           Ok, Guy!        │     │    =======+
+        \ \   |   ~  |     │ │$            $│           ok Guy!         │     │    =======+
         \  \   \ == /      │ │   B A S E    │                      _____│_____│______    |+
          \  \___|  |___    │$│    ????      │                  .-'"___________________`-.|+
           \ /   \__/   \   └─┤$            $│                 ( .'"                   '-.)+
@@ -933,5 +855,148 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
         require(fyTokenBalance - fyTokenOut >= baseBalance + baseIn, "Pool: fyToken balance too low");
 
         return baseIn;
+    }
+
+    /* BALANCE MANAGEMENT FUNCTIONS
+     *****************************************************************************************************************/
+    /*
+                  _____________________________________
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   ||_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_||
+                   || | | | | | | | | | | | | | | | ||
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                   |o o o o o o o o o o o o o o o o o|
+                  _|o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o_o|_
+                          "Poolie's Abacus" - ejm */
+
+    /// Returns the base balance
+    function getBaseBalance() public view override returns (uint112) {
+        return _getBaseBalance();
+    }
+
+    /// Returns the base current price
+    function getBaseCurrentPrice() public view returns (uint256) {
+        return base.pricePerShare();
+    }
+
+    /// Returns the "virtual" fyToken balance, which is the actual balance plus the pool token supply.
+    function getFYTokenBalance() public view override returns (uint112) {
+        return _getFYTokenBalance();
+    }
+
+    /// Returns the cached balances & last updated timestamp.
+    /// @return Cached base token balance.
+    /// @return Cached virtual FY token balance which is the actual balance plus the pool token supply.
+    /// @return Timestamp that balances were last cached.
+    function getCache()
+        public
+        view
+        override
+        returns (
+            uint112,
+            uint112,
+            uint32
+        )
+    {
+        return (baseCached, fyTokenCached, blockTimestampLast);
+    }
+
+    /// Calculates cumulativeRatioLast as of current timestamp.
+    /// @return the cumulative ratio up to the current timestamp as ray
+    function cumulativeRatioCurrent() external view returns (uint256) {
+        //TODO: gas golf
+        // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
+        return
+            cumulativeRatioLast +
+            ((uint256(fyTokenCached) * 1e27) * (block.timestamp - blockTimestampLast)) /
+            baseCached;
+    }
+
+    /// Retrieve any base tokens not accounted for in the cache
+    function retrieveBase(address to) external override returns (uint128 retrieved) {
+        // todo: auth?
+        retrieved = _getBaseBalance() - baseCached; // Cache can never be above balances
+        base.safeTransfer(to, retrieved);
+        // Now the current balances match the cache, so no need to update the TWAR
+    }
+
+    /// Retrieve any fyTokens not accounted for in the cache
+    function retrieveFYToken(address to) external override returns (uint128 retrieved) {
+        // todo: auth?
+        retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
+        fyToken.safeTransfer(to, retrieved);
+        // Now the balances match the cache, so no need to update the TWAR
+    }
+
+    /// Updates the cache to match the actual balances.
+    function sync() external {
+        _update(_getBaseBalance(), _getFYTokenBalance(), baseCached, fyTokenCached);
+    }
+
+    /// Returns the base balance
+    function _getBaseBalance() internal view returns (uint112) {
+        return base.balanceOf(address(this)).u112();
+    }
+
+    /// Returns the c based on the current price
+    function _getC() internal view returns (int128) {
+        return ((_getBasePrice()).fromUInt()).div(uint256(1e18).fromUInt());
+    }
+
+    /// Returns the base current price
+    function _getBasePrice() internal view virtual returns (uint256) {
+        return base.pricePerShare() * scaleFactor;
+    }
+
+    /// Returns the "virtual" fyToken balance, which is the real balance plus the pool token supply.
+    function _getFYTokenBalance() internal view returns (uint112) {
+        return (fyToken.balanceOf(address(this)) + _totalSupply).u112();
+    }
+
+    /// Update cache and, on the first call per block, ratio accumulators
+    function _update(
+        uint128 baseBalance,
+        uint128 fyBalance,
+        uint112 baseCached_,
+        uint112 fyTokenCached_
+    ) private {
+        // Don't do anything if the reserves are unchanged.
+        if (baseBalance == baseCached_ && fyBalance == fyTokenCached_) return;
+
+        uint32 blockTimestamp = uint32(block.timestamp);
+        uint32 timeElapsed;
+        timeElapsed = blockTimestamp - blockTimestampLast; // underflow is desired
+
+        // Always update the reserves caches
+        baseCached = baseBalance.u112();
+        fyTokenCached = fyBalance.u112();
+
+        uint256 oldCumulativeRatioLast = cumulativeRatioLast;
+
+        if (timeElapsed == 0 || fyTokenCached_ == 0 || baseCached_ == 0) {
+            // If timeElapsed or fyTokenCached == 0 then nothing will be added to the cumulativeRatio.
+            // If baseCached == 0 then this probably means we haven't minted yet, anyways it would revert div by 0.  TODO: Investigate baseCadched == 0 scenario
+            // If any of these conditions are true we can just update blockTimestampLast and early return.
+            blockTimestampLast = blockTimestamp;
+            emit Sync(baseCached, fyTokenCached, oldCumulativeRatioLast);
+            return;
+        }
+
+        // Update cumulativeRatioLast
+
+        // We multiply by 1e27 here so that r = t * y/x is a fixed point factor with 27 decimals
+        uint256 scaledFYTokenCached = uint256(fyTokenCached_) * 1e27;
+        uint256 newCumulativeRatioLast = oldCumulativeRatioLast + (scaledFYTokenCached * timeElapsed) / baseCached_;
+
+        if (oldCumulativeRatioLast != newCumulativeRatioLast) {
+            // No need to update if ratio unchanged.
+            cumulativeRatioLast = newCumulativeRatioLast;
+            blockTimestampLast = blockTimestamp;
+        }
+
+        emit Sync(baseCached, fyTokenCached, newCumulativeRatioLast);
     }
 }
