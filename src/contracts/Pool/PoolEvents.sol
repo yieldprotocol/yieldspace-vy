@@ -5,7 +5,7 @@ pragma solidity >=0.8.13;
  ******************************************************************************************************************/
 
 interface PoolEvents {
-    event FeesSet(int128 g1_, int128 g2_);
+    event FeesSet(uint16 g1Fee);
     event Liquidity(
         uint32 maturity,
         address indexed from,

@@ -69,7 +69,7 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         vm.prank(alice);
         pool.sellFYToken(bob, 0);
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (,uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -94,15 +94,14 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         vm.prank(bob);
         pool.sellFYToken(bob, 0);
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (,uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
 
     function testUnit_tradeUSDC04() public {
         console.log("buys a certain amount base for fyToken");
-        (, uint112 fyTokenBalBefore,) = pool.getCache();
-        // (uint112 baseBalBefore, uint112 fyTokenBalBefore,) = pool.getCache();
+        (,, uint104 fyTokenBalBefore,) = pool.getCache();
 
         uint256 userBaseBefore = base.balanceOf(bob);
         uint128 baseOut = uint128(1000 * 1e6);
@@ -127,7 +126,7 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         vm.prank(bob);
         pool.buyBase(bob, uint128(baseOut), type(uint128).max);
 
-        (, uint112 fyTokenBal,) = pool.getCache();
+        (,, uint104 fyTokenBal,) = pool.getCache();
         uint256 fyTokenIn = fyTokenBal - fyTokenBalBefore;
         uint256 fyTokenChange = pool.getFYTokenBalance() - fyTokenBal;
 
@@ -135,7 +134,7 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
 
         almostEqual(fyTokenIn, expectedFYTokenIn, 1);
 
-        (uint112 baseBalAfter, uint112 fyTokenBalAfter,) = pool.getCache();
+        (,uint104 baseBalAfter, uint104 fyTokenBalAfter,) = pool.getCache();
 
         require(baseBalAfter == pool.getBaseBalance());
         require(fyTokenBalAfter + fyTokenChange == pool.getFYTokenBalance());
@@ -161,7 +160,7 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         pool.buyBase(bob, baseOut, uint128(MAX));
         require(base.balanceOf(bob) == bobBaseBefore + baseOut);
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (,uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal != pool.getFYTokenBalance());
 
@@ -204,7 +203,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         uint256 fyTokenOut = fyToken.balanceOf(bob) - userFYTokenBefore;
         require(base.balanceOf(alice) == userBaseBalanceBefore, "'From' wallet should have no base tokens");
         require(fyTokenOut == expectedFYTokenOut);
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (,uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -230,7 +229,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         vm.prank(alice);
         pool.sellBase(bob, 0);
 
-        (uint112 baseBalAfter, uint112 fyTokenBalAfter,) = pool.getCache();
+        (,uint104 baseBalAfter, uint104 fyTokenBalAfter,) = pool.getCache();
 
         require(baseBalAfter == pool.getBaseBalance());
         require(fyTokenBalAfter == pool.getFYTokenBalance());
@@ -238,7 +237,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
 
     function testUnit_tradeUSDC10() public {
         console.log("buys a certain amount of fyTokens with base");
-        (uint112 baseCachedBefore,,) = pool.getCache();
+        (,uint104 baseCachedBefore,,) = pool.getCache();
         uint256 userFYTokenBefore = fyToken.balanceOf(bob);
         uint128 fyTokenOut = uint128(1e6);
 
@@ -263,7 +262,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         vm.prank(alice);
         pool.buyFYToken(bob, fyTokenOut, uint128(MAX));
 
-        (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent,) = pool.getCache();
+        (,uint104 baseCachedCurrent, uint104 fyTokenCachedCurrent,) = pool.getCache();
 
         uint256 baseIn = baseCachedCurrent - baseCachedBefore;
         uint256 baseChange = pool.getBaseBalance() - baseCachedCurrent;
@@ -291,7 +290,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         console.log("donates base and buys fyToken");
         uint256 baseBalances = pool.getBaseBalance();
         uint256 fyTokenBalances = pool.getFYTokenBalance();
-        (uint112 baseCachedBefore,,) = pool.getCache();
+        (,uint104 baseCachedBefore,,) = pool.getCache();
 
         uint128 fyTokenOut = uint128(1e6);
         uint128 baseDonation = uint128(1e6);
@@ -300,7 +299,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
 
         pool.buyFYToken(bob, fyTokenOut, uint128(MAX));
 
-        (uint112 baseCachedCurrent, uint112 fyTokenCachedCurrent,) = pool.getCache();
+        (,uint104 baseCachedCurrent, uint104 fyTokenCachedCurrent,) = pool.getCache();
         uint256 baseIn = baseCachedCurrent - baseCachedBefore;
 
         require(baseCachedCurrent == baseBalances + baseIn);

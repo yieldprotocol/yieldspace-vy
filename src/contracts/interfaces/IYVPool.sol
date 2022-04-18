@@ -9,15 +9,13 @@ interface IYVPool is IERC20, IERC2612 {
     function getBaseCurrentPrice() external view returns (uint256); // new
     function mu() external view returns(int128); // new
     function ts() external view returns(int128);
-    function g1() external view returns(int128);
-    function g2() external view returns(int128);
     function maturity() external view returns(uint32);
     function scaleFactor() external view returns(uint96);
-    function getCache() external view returns (uint112, uint112, uint32);
+    function getCache() external view returns (uint16, uint104, uint104, uint32);
     function base() external view returns(IYVToken); // updated
     function fyToken() external view returns(IFYToken);
-    function getBaseBalance() external view returns(uint112);
-    function getFYTokenBalance() external view returns(uint112);
+    function getBaseBalance() external view returns(uint104);
+    function getFYTokenBalance() external view returns(uint104);
     function retrieveBase(address to) external returns(uint128 retrieved);
     function retrieveFYToken(address to) external returns(uint128 retrieved);
     function sellBase(address to, uint128 min) external returns(uint128);

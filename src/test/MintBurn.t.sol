@@ -63,7 +63,7 @@ contract Mint__ZeroState is ZeroStateDai {
         base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI);
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -85,7 +85,7 @@ contract Mint__ZeroState is ZeroStateDai {
 
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI / 2);
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -97,12 +97,12 @@ contract Mint__ZeroState is ZeroStateDai {
         fyToken.mint(address(pool), INITIAL_YVDAI / 9);
 
         vm.expectEmit(false, false, false, true);
-        emit Sync(uint112(INITIAL_YVDAI), uint112(INITIAL_YVDAI / 9), 0);
+        emit Sync(uint104(INITIAL_YVDAI), uint104(INITIAL_YVDAI / 9), 0);
 
         vm.prank(alice);
         pool.sync();
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -128,7 +128,7 @@ contract Mint__WithLiquidity is WithLiquidity {
         almostEqual(minted, expectedMint, fyTokenIn / 10000);
         almostEqual(base.balanceOf(bob), WAD + bobYVInitialBalance, fyTokenIn / 10000);
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
 
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
@@ -172,7 +172,7 @@ contract Burn__WithLiquidity is WithLiquidity {
         almostEqual(baseOut, expectedBaseOut, baseOut / 10000);
         almostEqual(fyTokenOut, expectedFYTokenOut, fyTokenOut / 10000);
 
-        (uint112 baseBal, uint112 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
         require(base.balanceOf(bob) - bobYVInitialBalance == baseOut);

@@ -54,12 +54,12 @@ abstract contract ZeroState is TestCore {
         fyToken = new FYTokenMock(fyName, fySymbol, address(base), maturity);
 
         // setup pool
-        pool = new Pool(address(base), address(fyToken), ts, g1, g2);
+        pool = new Pool(address(base), address(fyToken), ts, g1Fee);
 
         // setup users
-        alice = address(1);
+        alice = address(0xbabe);
         vm.label(alice, "alice");
-        bob = address(2);
+        bob = address(0xb0b);
         vm.label(bob, "bob");
     }
 }

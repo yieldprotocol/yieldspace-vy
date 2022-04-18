@@ -51,8 +51,8 @@ contract YieldMathTest is DSTest {
 
     int128 immutable k;
 
-    uint256 public constant gNumerator = 95;
-    uint256 public constant gDenominator = 100;
+    uint8 public constant g1Numerator = 95;
+    uint8 public constant g1Denominator = 100;
     int128 public g1; // g to use when selling shares to pool
     int128 public g2; // g to use when selling fyTokens to pool
 
@@ -68,8 +68,8 @@ contract YieldMathTest is DSTest {
         uint256 invK = 25 * 365 * 24 * 60 * 60 * 10;
         k = uint256(1).fromUInt().div(invK.fromUInt());
 
-        g1 = gNumerator.fromUInt().div(gDenominator.fromUInt());
-        g2 = gDenominator.fromUInt().div(gNumerator.fromUInt());
+        g1 = uint256(g1Numerator).fromUInt().div(uint256(g1Denominator).fromUInt());
+        g2 = uint256(g1Denominator).fromUInt().div(uint256(g1Numerator).fromUInt());
         c = cNumerator.fromUInt().div(cDenominator.fromUInt());
         mu = muNumerator.fromUInt().div(muDenominator.fromUInt());
     }
@@ -187,7 +187,7 @@ contract YieldMathTest is DSTest {
             mu
         ) / 1e18;
 
-        int128 bumpedG = uint256(975).fromUInt().div(gDenominator.fromUInt());
+        int128 bumpedG = uint256(975).fromUInt().div(uint256(g1Denominator).fromUInt());
         uint128 result2 = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
             fyTokenReserves,
