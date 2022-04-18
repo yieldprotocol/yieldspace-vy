@@ -53,7 +53,7 @@ yieldcurity review
 /// @dev Deploy pool with Yearn token and associated fyToken.
 /// Uses 64.64 bit math under the hood for precision and reduced gas usage.
 /// @author Orignal work by @alcueca. Adapted by @devtooligan.  Maths and whitepaper by @aniemburg.
-contract Pool is PoolEvents, IYVPool, ERC20Permit {
+contract Pool is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     /* LIBRARIES
      *****************************************************************************************************************/
 
@@ -874,11 +874,10 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     }
 
     /// The "virtual" fyToken balance, which is the actual balance plus the pool token supply.
-    /// @dev For more explanation about using the LP tokens as part of the virtual reserves see
-    ///
+    /// @dev For more explanation about using the LP tokens as part of the virtual reserves see:
+    /// https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw
     /// @return The current balance of the pool's fyTokens plus the current balance of the pool's
     /// total supply of LP tokens as a uint104
-
     function getFYTokenBalance() public view override returns (uint104) {
         return _getFYTokenBalance();
     }
@@ -927,7 +926,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /// @param to Address of the recipient of the base tokens.
     /// @return retrieved The amount of base tokens sent.
     function retrieveBase(address to) external override returns (uint128 retrieved) {
-        // todo: auth?
+        // TODO: any interest in adding auth to these?
+        // related: https://twitter.com/transmissions11/status/1505994136389754880?s=20&t=1H6gvzl7DJLBxXqnhTuOVw
         retrieved = _getBaseBalance() - baseCached; // Cache can never be above balances
         base.safeTransfer(to, retrieved);
         // Now the current balances match the cache, so no need to update the TWAR
@@ -937,7 +937,8 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
     /// @param to Address of the recipient of the fyTokens.
     /// @return retrieved The amount of fyTokens sent.
     function retrieveFYToken(address to) external override returns (uint128 retrieved) {
-        // todo: auth?
+        // TODO: any interest in adding auth to these?
+        // related: https://twitter.com/transmissions11/status/1505994136389754880?s=20&t=1H6gvzl7DJLBxXqnhTuOVw
         retrieved = _getFYTokenBalance() - fyTokenCached; // Cache can never be above balances
         fyToken.safeTransfer(to, retrieved);
         // Now the balances match the cache, so no need to update the TWAR
@@ -950,7 +951,7 @@ contract Pool is PoolEvents, IYVPool, ERC20Permit {
 
     /// Sets g1 numerator and denominator
     /// @dev These numbers are converted to 64.64 and used to calculate g1 by dividing them, or g2 from 1/g1
-    function setFees(uint16 g1Fee_) public {
+    function setFees(uint16 g1Fee_) public auth {
         if (g1Fee_ > 10000) {
             revert InvalidFee();
         }
