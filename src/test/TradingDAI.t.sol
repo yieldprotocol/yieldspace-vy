@@ -202,9 +202,6 @@ contract TradeDAI__WithExtraFYToken is WithExtraFYToken {
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
         int128 c_ = (base.previewRedeem(10 ** base.decimals()).fromUInt()).div(uint256(1e18).fromUInt());
-        console.log('4626:');
-        console.log(base.previewRedeem(10 ** base.decimals()));
-
 
         // Transfer base for sale to the pool
         base.mint(address(pool), baseIn);

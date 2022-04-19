@@ -51,13 +51,11 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     /* LIBRARIES
      *****************************************************************************************************************/
 
-    using CastU256U128 for uint256;
-    using CastU256U112 for uint256;
-    using CastU256I256 for uint256;
-    using CastU128U112 for uint128;
-    using CastU128I128 for uint128;
-    using Math64x64 for uint256;
     using Math64x64 for int128;
+    using Math64x64 for uint256;
+    using CastU256U128 for uint256;
+    using CastU256I256 for uint256;
+    using CastU128I128 for uint128;
     using MinimalTransferHelper for IFYToken;
     using MinimalTransferHelper for IERC4626;
 
@@ -75,7 +73,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     /* IMMUTABLES
      *****************************************************************************************************************/
 
-    IERC4626 public immutable base;
+    IERC4626 public immutable base;// TODO: Consider making this IERC20 and use IERC4626 with previewRedeem
     IFYToken public immutable fyToken;
 
     int128 public immutable mu; //            The normalization coefficient, the initial c value, in 64.64
