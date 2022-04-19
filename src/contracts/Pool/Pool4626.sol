@@ -260,7 +260,6 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
         uint256 supply = _totalSupply;
         (uint16 g1Fee_, uint104 baseCached_, uint104 fyTokenCached_, ) = getCache();
         uint256 realFYTokenCached_ = fyTokenCached_ - supply; // The fyToken cache includes the virtual fyToken, equal to the supply
-        uint256 baseAvailable = base.balanceOf(address(this)) - baseCached_;
 
         // Check the burn wasn't sandwiched
         if (realFYTokenCached_ != 0) {
@@ -276,11 +275,11 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
         if (supply == 0) {
             // **First mint**
             // Initialize at 1 pool token minted per base token supplied
-            baseIn = baseAvailable;
+            baseIn = base.balanceOf(address(this)) - baseCached_;
             tokensMinted = baseIn;
         } else if (realFYTokenCached_ == 0) {
             // Edge case, no fyToken in the Pool after initialization
-            baseIn = baseAvailable;
+            baseIn = base.balanceOf(address(this)) - baseCached_;
             tokensMinted = (supply * baseIn) / baseCached_;
         } else {
             // There is an optional virtual trade before the mint
@@ -293,7 +292,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
             fyTokenIn = fyToken.balanceOf(address(this)) - realFYTokenCached_;
             tokensMinted = (supply * (fyTokenToBuy + fyTokenIn)) / (realFYTokenCached_ - fyTokenToBuy);
             baseIn = baseToSell + ((baseCached_ + baseToSell) * tokensMinted) / supply;
-            require(baseAvailable >= baseIn, "Pool: Not enough base token in");
+            require((base.balanceOf(address(this)) - baseCached_) >= baseIn, "Pool: Not enough base token in");
         }
 
         // Update TWAR
@@ -308,7 +307,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
         _mint(to, tokensMinted);
 
         // Return any unused base
-        if (baseAvailable - baseIn != 0) base.safeTransfer(remainder, baseAvailable - baseIn);
+        if ((base.balanceOf(address(this)) - baseCached_) - baseIn != 0) base.safeTransfer(remainder, (base.balanceOf(address(this)) - baseCached_) - baseIn);
 
         emit Liquidity(
             maturity,
