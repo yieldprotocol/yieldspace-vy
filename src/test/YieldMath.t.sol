@@ -123,7 +123,7 @@ contract YieldMathTest is DSTest {
         }
     }
 
-    function testUnit_fyTokenOutForSharesIn__mirror() public {
+    function testUnit_fyTokenOutForSharesIn__mirror() public view {
         // should match Desmos for selected inputs
         uint128[4] memory sharesAmounts = [
             uint128(50000 * 1e18),
@@ -133,8 +133,6 @@ contract YieldMathTest is DSTest {
         ];
         uint128 result;
         for (uint256 idx; idx < sharesAmounts.length; idx++) {
-            emit log_named_uint("sharesAmount", sharesAmounts[idx]);
-            emit log_named_uint("sharesReserves", sharesReserves);
             result = YieldMath.fyTokenOutForSharesIn(
                 sharesReserves,
                 fyTokenReserves,
@@ -145,7 +143,6 @@ contract YieldMathTest is DSTest {
                 c,
                 mu
             );
-            emit log_named_uint("result", result);
             uint128 resultShares = YieldMath.sharesInForFYTokenOut(
                 sharesReserves,
                 fyTokenReserves,
@@ -156,7 +153,6 @@ contract YieldMathTest is DSTest {
                 c,
                 mu
             );
-            emit log_named_uint("resultShares", resultShares);
 
             assertSameOrSlightlyLess(resultShares / 1e18, sharesAmounts[idx] / 1e18);
         }
@@ -201,7 +197,7 @@ contract YieldMathTest is DSTest {
         require(result2 > result1);
     }
 
-    function testFuzz_fyTokenOutForSharesIn(uint256 passedIn) public {
+    function testFuzz_fyTokenOutForSharesIn(uint256 passedIn) public view {
         uint128 sharesAmount = coerceUInt256To128(passedIn, 1000000000000000000, 949227786000000000000000);
         uint128 result = YieldMath.fyTokenOutForSharesIn(
             sharesReserves,
@@ -215,8 +211,6 @@ contract YieldMathTest is DSTest {
         );
 
         if (result < sharesAmount) {
-            emit log_named_uint("sharesAmount", sharesAmount);
-            emit log_named_uint("result", result);
         }
         require(result > sharesAmount);
     }
@@ -273,7 +267,7 @@ contract YieldMathTest is DSTest {
         }
     }
 
-    function testUnit_sharesInForFYTokenOut__mirror() public {
+    function testUnit_sharesInForFYTokenOut__mirror() public view {
         // should match Desmos for selected inputs
         uint128[4] memory fyTokenAmounts = [
             uint128(50000 * 1e18),
@@ -283,8 +277,6 @@ contract YieldMathTest is DSTest {
         ];
         uint128 result;
         for (uint256 idx; idx < fyTokenAmounts.length; idx++) {
-            emit log_named_uint("fyTokenAmount", fyTokenAmounts[idx]);
-            emit log_named_uint("fyTokenReserves", fyTokenReserves);
             result = YieldMath.fyTokenOutForSharesIn(
                 sharesReserves,
                 fyTokenReserves,
@@ -295,7 +287,6 @@ contract YieldMathTest is DSTest {
                 c,
                 mu
             );
-            emit log_named_uint("result", result);
             uint128 resultFYTokens = YieldMath.sharesInForFYTokenOut(
                 sharesReserves,
                 fyTokenReserves,
@@ -306,7 +297,6 @@ contract YieldMathTest is DSTest {
                 c,
                 mu
             );
-            emit log_named_uint("resultFYTokens", resultFYTokens);
             assertSameOrSlightlyMore(resultFYTokens / 1e18, fyTokenAmounts[idx] / 1e18);
         }
     }
@@ -498,8 +488,6 @@ contract YieldMathTest is DSTest {
     //     ];
     //     uint128 result;
     //     for (uint256 idx; idx < sharesReservesAmounts.length; idx++) {
-    //         emit log_named_uint("sharesReserves", sharesReservesAmounts[idx]);
-    //         emit log_named_uint("fyTokenReserves", fyTokenReservesAmounts[idx]);
     //         result =
     //             YieldMath.maxFYTokenOut(
     //                 sharesReservesAmounts[idx],
@@ -511,8 +499,6 @@ contract YieldMathTest is DSTest {
     //                 mu
     //             ) / 1e18;
     //             // );
-    //         emit log_named_uint("result", result);
-    //         emit log_named_uint("expectedResult", expectedResults[idx]);
     //         assertEq(result, expectedResults[idx]);
     //         // assertSameOrSlightlyMore(result, expectedResults[idx]);
     //     }

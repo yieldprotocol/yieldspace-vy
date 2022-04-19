@@ -64,7 +64,7 @@ library YieldMathExtensions {
     //             pool.maturity() - uint32(block.timestamp),
     //             pool.ts(), // TODO: Is there a better way than calling all these fns?
     //             pool.g1(),
-    //             1, // pool.base.pricePerShare()
+    //             1, // pool.base.getPricePerFullShare()
     //             2 // pool.mu()
     //         ) / scaleFactor;
     // }

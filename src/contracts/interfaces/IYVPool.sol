@@ -6,7 +6,7 @@ import "@yield-protocol/vault-interfaces/IFYToken.sol";
 import "src/contracts/interfaces/IYVToken.sol";
 
 interface IYVPool is IERC20, IERC2612 {
-    function base() external view returns(IYVToken);
+    // function base() external returns(IYVToken);
     function burn(
         address baseTo,
         address fyTokenTo,

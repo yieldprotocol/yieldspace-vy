@@ -22,7 +22,6 @@ import {YieldMath} from "../contracts/YieldMath.sol";
 
 import "./shared/Utils.sol";
 import "./shared/Constants.sol";
-import {Pool} from "../contracts/Pool/Pool.sol";
 import {FYTokenMock} from "./mocks/FYTokenMock.sol";
 import {YVTokenMock} from "./mocks/YVTokenMock.sol";
 import {ZeroStateUSDC} from "./shared/ZeroState.sol";
@@ -108,7 +107,7 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
 
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
-        int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
+        int128 c_ = (base.previewRedeem(10 ** base.decimals()).fromUInt()).div(uint256(1e6).fromUInt());
 
         fyToken.mint(address(pool), initialFYTokens); // send some tokens to the pool
 
@@ -182,7 +181,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         uint256 userBaseBalanceBefore = base.balanceOf(alice);
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
-        int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
+        int128 c_ = (base.previewRedeem(10 ** base.decimals()).fromUInt()).div(uint256(1e6).fromUInt());
 
         // Transfer base for sale to the pool
         base.mint(address(pool), baseIn);
@@ -243,7 +242,7 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
 
         uint128 virtFYTokenBal = uint128(fyToken.balanceOf(address(pool)) + pool.totalSupply());
         uint128 sharesReserves = uint128(base.balanceOf(address(pool)));
-        int128 c_ = (base.pricePerShare().fromUInt()).div(uint256(1e6).fromUInt());
+        int128 c_ = (base.previewRedeem(10 ** base.decimals()).fromUInt()).div(uint256(1e6).fromUInt());
 
         // Transfer base for sale to the pool
         base.mint(address(pool), initialBase);

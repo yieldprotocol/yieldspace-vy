@@ -2,11 +2,10 @@
 pragma solidity >=0.8.13;
 
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
-import {IERC20Metadata} from "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 
 import {IYVToken} from "../../contracts/interfaces/IYVToken.sol";
+import {IERC20Metadata} from "@yield-protocol/utils-v2/contracts/token/IERC20Metadata.sol";
 
-// TODO: This is a dropin replacement for @yield-protocol/vault-v2/contracts/mocks/YVTokenMock.sol
 
 abstract contract Mintable is ERC20 {
     /// @dev Give tokens to whoever asks for them.
@@ -14,7 +13,7 @@ abstract contract Mintable is ERC20 {
         _mint(to, amount);
     }
 }
-contract YVTokenMock is Mintable {
+contract ERC4626TokenMock is Mintable {
     IERC20Metadata public token;
     uint256 public price;
 
@@ -35,8 +34,8 @@ contract YVTokenMock is Mintable {
         token.transfer(to, obtained);
     }
 
-    function getPricePerFullShare() public view virtual returns (uint256) {
-        return price;
+    function previewRedeem(uint256 amount) public view virtual returns (uint256) {
+        return price * amount / (10 ** decimals);
     }
 
     function setPrice(uint256 price_) public {

@@ -24,7 +24,6 @@ import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
 
-
 abstract contract WithLiquidity is ZeroStateDai {
     function setUp() public virtual override {
         super.setUp();
@@ -43,19 +42,28 @@ abstract contract WithLiquidity is ZeroStateDai {
 
 contract Admin__WithLiquidity is WithLiquidity {
     function testUnit_admin1() public {
-        console.log("external getters return correct info");
+        require(pool.getBaseBalance() == base.balanceOf(address(pool)));
+        require(pool.getBaseCurrentPrice() == base.previewRedeem(10**base.decimals()));
+        require(pool.getFYTokenBalance() == fyToken.balanceOf(address(pool)) + pool.totalSupply());
+        (uint16 g1fee_, uint104 baseCached, uint104 fyTokenCached, uint32 blockTimeStampLast) = pool.getCache();
+        require(g1fee_ == g1Fee);
+        require(baseCached == 1100000000000000000000000);
+        require(fyTokenCached == 1222222222222222222222222);
+        require(blockTimeStampLast > 0);
+        uint256 expectedCurrentCumulativeRatio = pool.cumulativeRatioLast() +
+            ((uint256(fyTokenCached) * 1e27) * (block.timestamp - blockTimeStampLast)) /
+            baseCached;
+        (uint256 actualCurrentCumulativeRatio, ) = pool.currentCumulativeRatio();
+        require(actualCurrentCumulativeRatio == expectedCurrentCumulativeRatio);
+        base.mint(address(pool), 1e18);
+        pool.sync();
+        (,uint104 baseCachedNew,,) = pool.getCache();
+        require(baseCachedNew == baseCached + 1e18);
+
     }
+
     function testUnit_admin2() public {
-        console.log("unauthorized users cannot change fees");
+        vm.expectRevert(bytes("Access denied"));
+        pool.setFees(600);
     }
-
-    function testUnit_admin3() public {
-        console.log("sync() updates cumulativeBalancesRatioLast");
-    }
-
-    function testUnit_admin4() public {
-        console.log("getCumulativeRatioCurrent returns");
-        uint104 x;
-    }
-
 }

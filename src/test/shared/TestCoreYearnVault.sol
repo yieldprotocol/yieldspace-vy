@@ -11,11 +11,11 @@ import {YieldMath} from "../../contracts/YieldMath.sol";
 
 import "./Utils.sol";
 import "./Constants.sol";
-import {Pool4626} from "../../contracts/Pool/Pool4626.sol";
+import {PoolYearnVault} from "../../contracts/Pool/YearnVault/PoolYearnVault.sol";
 import {FYTokenMock} from "../mocks/FYTokenMock.sol";
-import {ERC4626TokenMock} from "../mocks/ERC4626TokenMock.sol";
+import {YVTokenMock} from "../mocks/YVTokenMock.sol";
 
-abstract contract TestCore {
+abstract contract TestCoreYearnVault{
     event Liquidity(
         uint32 maturity,
         address indexed from,
@@ -38,9 +38,9 @@ abstract contract TestCore {
 
     Vm public vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    ERC4626TokenMock public base;
+    YVTokenMock public base;
     FYTokenMock public fyToken;
-    Pool4626 public pool;
+    PoolYearnVault public pool;
 
     address public alice;
     address public bob;

@@ -126,7 +126,7 @@ contract Mint__WithLiquidity is WithLiquidity {
         uint256 minted = pool.balanceOf(bob) - poolTokensBefore;
 
         almostEqual(minted, expectedMint, fyTokenIn / 10000);
-        almostEqual(base.balanceOf(bob), WAD + bobYVInitialBalance, fyTokenIn / 10000);
+        almostEqual(base.balanceOf(bob), WAD + bobBaseInitialBalance, fyTokenIn / 10000);
 
         (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
 
@@ -175,7 +175,7 @@ contract Burn__WithLiquidity is WithLiquidity {
         (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
-        require(base.balanceOf(bob) - bobYVInitialBalance == baseOut);
+        require(base.balanceOf(bob) - bobBaseInitialBalance == baseOut);
         require(fyToken.balanceOf(address(charlie)) == fyTokenOut);
     }
 }

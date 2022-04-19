@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.13;
 
-import "./PoolErrors.sol";
-import "./PoolEvents.sol";
+import "./Pool4626Errors.sol";
+import "./Pool4626Events.sol";
 
 import "@yield-protocol/vault-interfaces/IFYToken.sol";
 import "@yield-protocol/utils-v2/contracts/token/ERC20.sol";
@@ -21,4 +21,4 @@ import {Exp64x64} from "../Exp64x64.sol";
 import {Math64x64} from "../Math64x64.sol";
 import {YieldMath} from "../YieldMath.sol";
 import {IYVPool} from "../interfaces/IYVPool.sol";
-import {IYVToken} from  "../interfaces/IYVToken.sol";
+import {IERC4626} from  "../interfaces/IERC4626.sol";

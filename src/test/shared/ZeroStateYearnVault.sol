@@ -11,10 +11,10 @@ import {YieldMath} from "../../contracts/YieldMath.sol";
 
 import "./Utils.sol";
 import "./Constants.sol";
-import {TestCore} from "./TestCore.sol";
-import {Pool4626} from "../../contracts/Pool/Pool4626.sol";
+import {TestCoreYearnVault} from "./TestCoreYearnVault.sol";
+import {PoolYearnVault} from "../../contracts/Pool/YearnVault/PoolYearnVault.sol";
 import {FYTokenMock} from "../mocks/FYTokenMock.sol";
-import {ERC4626TokenMock} from "../mocks/ERC4626TokenMock.sol";
+import {YVTokenMock} from "../mocks/YVTokenMock.sol";
 
 struct ZeroStateParams {
     string fyName;
@@ -24,7 +24,7 @@ struct ZeroStateParams {
     uint8 baseDecimals;
 }
 
-abstract contract ZeroState is TestCore {
+abstract contract ZeroStateYearnVault is TestCoreYearnVault {
     using Exp64x64 for uint128;
     using Math64x64 for int256;
     using Math64x64 for int128;
@@ -49,12 +49,12 @@ abstract contract ZeroState is TestCore {
     function setUp() public virtual {
         ts = ONE.div(uint256(25 * 365 * 24 * 60 * 60 * 10).fromUInt());
         // setup mock tokens
-        base = new ERC4626TokenMock(baseName, baseSymbol, baseDecimals, address(0));
+        base = new YVTokenMock(baseName, baseSymbol, baseDecimals, address(0));
         base.setPrice((muNumerator * (10**base.decimals())) / muDenominator);
         fyToken = new FYTokenMock(fyName, fySymbol, address(base), maturity);
 
         // setup pool
-        pool = new Pool4626(address(base), address(fyToken), ts, g1Fee);
+        pool = new PoolYearnVault(address(base), address(fyToken), ts, g1Fee);
 
         // setup users
         alice = address(0xbabe);
@@ -64,8 +64,7 @@ abstract contract ZeroState is TestCore {
     }
 }
 
-abstract contract ZeroStateDai is ZeroState {
-    // used in 2 test suites __WithLiquidity
+abstract contract ZeroStateYearnVaultDai is ZeroStateYearnVault {
 
     uint256 public constant aliceBaseInitialBalance = 1000 * 1e18;
     uint256 public constant bobBaseInitialBalance = 2_000_000 * 1e18;
@@ -74,31 +73,9 @@ abstract contract ZeroStateDai is ZeroState {
     uint256 public constant initialFYTokens = 1_500_000 * 1e18;
 
     ZeroStateParams public zeroStateParams =
-        ZeroStateParams("fyTVDai1", "fyToken tvDAI maturity 1", "tvDAI", "Tokenized Vault DAI", 18);
+        ZeroStateParams("fyYVDai1", "fyToken yvDAI maturity 1", "yvDAI", "Yearn Vault DAI", 18);
 
-    constructor() ZeroState(zeroStateParams) {}
-
-    function setUp() public virtual override {
-        super.setUp();
-
-        base.mint(alice, aliceBaseInitialBalance);
-        base.mint(bob, bobBaseInitialBalance);
-    }
-}
-
-abstract contract ZeroStateUSDC is ZeroState {
-    // used in 2 test suites __WithLiquidity
-
-    uint256 public constant aliceBaseInitialBalance = 1000 * 1e6;
-    uint256 public constant bobBaseInitialBalance = 2_000_000 * 1e6;
-
-    uint256 public constant initialFYTokens = 1_500_000 * 1e6;
-    uint256 public constant initialBase = 1_100_000 * 1e6;
-
-    ZeroStateParams public zeroStateParams =
-        ZeroStateParams("fyTVUSDC1", "fyToken tvUSDC maturity 1", "tvUSDC", "Tokenized Vault USDC", 6);
-
-    constructor() ZeroState(zeroStateParams) {}
+    constructor() ZeroStateYearnVault(zeroStateParams) {}
 
     function setUp() public virtual override {
         super.setUp();
@@ -107,3 +84,4 @@ abstract contract ZeroStateUSDC is ZeroState {
         base.mint(bob, bobBaseInitialBalance);
     }
 }
+
