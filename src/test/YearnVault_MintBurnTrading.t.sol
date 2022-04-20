@@ -25,14 +25,14 @@ import "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
-import "./shared/Utils.sol";
-import "./shared/Constants.sol";
-import {ZeroStateYearnVaultDai} from "./shared/ZeroStateYearnVault.sol";
-
+import "../contracts/Pool/Pool4626Errors.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
 
+import "./shared/Utils.sol";
+import "./shared/Constants.sol";
+import {ZeroStateYearnVaultDai} from "./shared/ZeroStateYearnVault.sol";
 
 abstract contract WithLiquidityYearnVault is ZeroStateYearnVaultDai {
     function setUp() public virtual override {
@@ -256,7 +256,9 @@ contract TradeDAI__ZeroStateYearnVault is WithLiquidityYearnVault {
         console.log("does not sell fyToken beyond slippage");
         uint256 fyTokenIn = 1e18;
         fyToken.mint(address(pool), fyTokenIn);
-        vm.expectRevert(bytes("Pool: Not enough base obtained"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringSellFYToken.selector, 909037517147536297, 340282366920938463463374607431768211455)
+        );
         pool.sellFYToken(bob, type(uint128).max);
     }
 
@@ -325,7 +327,9 @@ contract TradeDAI__ZeroStateYearnVault is WithLiquidityYearnVault {
         console.log("does not buy base beyond slippage");
         uint128 baseOut = 1e18;
         fyToken.mint(address(pool), initialFYTokens);
-        vm.expectRevert(bytes("Pool: Too much fyToken in"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringBuyBase.selector, 1100063608132507117, 0)
+        );
         pool.buyBase(bob, baseOut, 0);
     }
 
@@ -397,8 +401,9 @@ contract TradeDAI__WithExtraFYTokenYearnVault is WithExtraFYTokenYearnVault {
         console.log("does not sell base beyond slippage");
         uint128 baseIn = uint128(WAD);
         base.mint(address(pool), baseIn);
-
-        vm.expectRevert(bytes("Pool: Not enough fyToken obtained"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringSellBase.selector, 1100059306836277437, 340282366920938463463374607431768211455)
+        );
         vm.prank(alice);
         pool.sellBase(bob, uint128(MAX));
     }
@@ -470,7 +475,9 @@ contract TradeDAI__WithExtraFYTokenYearnVault is WithExtraFYTokenYearnVault {
         uint128 fyTokenOut = uint128(WAD);
 
         base.mint(address(pool), initialBase);
-        vm.expectRevert(bytes("Pool: Too much base token in"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringBuyFYToken.selector, 909042724107451307, 0)
+        );
         pool.buyFYToken(alice, fyTokenOut, 0);
     }
 

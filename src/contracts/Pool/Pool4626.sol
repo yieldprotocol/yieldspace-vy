@@ -637,10 +637,10 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
  */
     /// Buy fyToken for base
     /// The trader needs to have called `base.approve`
-    /// @param to Wallet receiving the fyToken being bought
+    /// @param to Wallet receiving the fyToken being bought.
     /// @param fyTokenOut Amount of fyToken being bought that will be deposited in `to` wallet
     /// @param max Maximum amount of base token that will be paid for the trade
-    /// @return Amount of base that will be taken from caller's wallet
+    /// @return Amount of base that will be taken from caller's wallet.
     function buyFYToken(
         address to,
         uint128 fyTokenOut,
@@ -650,7 +650,6 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
         uint128 baseBalance = _getBaseBalance();
         (uint16 g1Fee_, uint104 baseCached_, uint104 fyTokenCached_, ) = getCache();
         uint128 baseIn = _buyFYTokenPreview(fyTokenOut, baseCached_, fyTokenCached_, _computeG1(g1Fee_));
-
         if (baseBalance - baseCached_ < baseIn) revert NotEnoughBaseIn((baseBalance - baseCached_), baseIn);
         if (baseIn > max) revert SlippageDuringBuyFYToken(baseIn, max);
 
@@ -729,9 +728,9 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
                                                               '-..___|_..=:` `-:=.._|___..-'
     */
     /// Sell base for fyToken.
-    /// The trader needs to have transferred the amount of base to sell to the pool before in the same transaction.
-    /// @param to Wallet receiving the fyToken being bought
-    /// @param min Minimm accepted amount of fyToken
+    /// The trader needs to have transferred the amount of base to sell to the pool before calling this fn.
+    /// @param to Wallet receiving the fyToken being bought.
+    /// @param min Minimm accepted amount of fyToken.
     /// @return Amount of fyToken that will be deposited on `to` wallet
     function sellBase(address to, uint128 min) external virtual override returns (uint128) {
         // Calculate trade

@@ -16,6 +16,7 @@ import "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
+import "../contracts/Pool/Pool4626Errors.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
@@ -78,7 +79,9 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         console.log("does not sell fyToken beyond slippage");
         uint256 fyTokenIn = 1e6;
         fyToken.mint(address(pool), fyTokenIn);
-        vm.expectRevert(bytes("Pool: Not enough base obtained"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringSellFYToken.selector, 908325, 340282366920938463463374607431768211455)
+        );
         pool.sellFYToken(bob, type(uint128).max);
     }
 
@@ -144,7 +147,9 @@ contract TradeUSDC__WithLiquidity is WithLiquidity {
         console.log("does not buy base beyond slippage");
         uint128 baseOut = 1e6;
         fyToken.mint(address(pool), initialFYTokens);
-        vm.expectRevert(bytes("Pool: Too much fyToken in"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringBuyBase.selector, 1100926, 0)
+        );
         pool.buyBase(bob, baseOut, 0);
     }
 
@@ -212,8 +217,9 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         console.log("does not sell base beyond slippage");
         uint128 baseIn = uint128(1e6);
         base.mint(address(pool), baseIn);
-
-        vm.expectRevert(bytes("Pool: Not enough fyToken obtained"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringSellBase.selector, 1100837, 340282366920938463463374607431768211455)
+        );
         vm.prank(alice);
         pool.sellBase(bob, uint128(MAX));
     }
@@ -282,7 +288,9 @@ contract TradeUSDC__WithExtraFYToken is WithExtraFYTokenUSDC {
         uint128 fyTokenOut = uint128(1e6);
 
         base.mint(address(pool), initialBase);
-        vm.expectRevert(bytes("Pool: Too much base token in"));
+        vm.expectRevert(
+            abi.encodeWithSelector(SlippageDuringBuyFYToken.selector, 908400, 0)
+        );
         pool.buyFYToken(alice, fyTokenOut, 0);
     }
 

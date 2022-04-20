@@ -20,10 +20,10 @@ import "./shared/Utils.sol";
 import "./shared/Constants.sol";
 import {ZeroStateDai} from "./shared/ZeroState.sol";
 
+import "../contracts/Pool/Pool4626Errors.sol";
 import {Exp64x64} from "../contracts/Exp64x64.sol";
 import {Math64x64} from "../contracts/Math64x64.sol";
 import {YieldMath} from "../contracts/YieldMath.sol";
-
 
 abstract contract WithLiquidity is ZeroStateDai {
     function setUp() public virtual override {
@@ -43,16 +43,32 @@ abstract contract WithLiquidity is ZeroStateDai {
 }
 
 contract Mint__ZeroState is ZeroStateDai {
+    function testUnit_mint0() public {
+        console.log("cannot mint before initialize or initialize without auth");
+
+        base.mint(address(pool), INITIAL_YVDAI);
+
+        vm.expectRevert(abi.encodeWithSelector(NotInitialized.selector));
+        vm.prank(alice);
+        pool.mint(bob, bob, 0, MAX);
+
+        address noAuth = payable(address(0xB0FFED));
+        vm.expectRevert(bytes("Access denied"));
+        vm.prank(noAuth);
+        pool.initialize(bob, bob, 0, MAX);
+
+    }
+
     function testUnit_mint1() public {
         console.log("adds initial liquidity");
 
-        vm.startPrank(bob);
+        vm.prank(bob);
         base.transfer(address(pool), INITIAL_YVDAI);
 
         vm.expectEmit(true, true, true, true);
         emit Liquidity(
             maturity,
-            bob,
+            alice,
             bob,
             address(0),
             int256(-1 * int256(INITIAL_YVDAI)),
@@ -60,11 +76,12 @@ contract Mint__ZeroState is ZeroStateDai {
             int256(INITIAL_YVDAI)
         );
 
+        vm.prank(alice);
         pool.initialize(bob, bob, 0, MAX);
         base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
 
         require(pool.balanceOf(bob) == INITIAL_YVDAI);
-        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal, ) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -74,7 +91,6 @@ contract Mint__ZeroState is ZeroStateDai {
         base.mint(address(pool), INITIAL_YVDAI);
 
         vm.startPrank(alice);
-
         pool.initialize(address(0), address(0), 0, MAX);
 
         // After initializing, donate base and sync to simulate having reached zero fyToken through trading
@@ -84,9 +100,8 @@ contract Mint__ZeroState is ZeroStateDai {
         base.mint(address(pool), INITIAL_YVDAI);
         pool.mint(bob, bob, 0, MAX);
 
-
         require(pool.balanceOf(bob) == INITIAL_YVDAI / 2);
-        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal, ) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -103,7 +118,7 @@ contract Mint__ZeroState is ZeroStateDai {
         vm.prank(alice);
         pool.sync();
 
-        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal, ) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
@@ -122,19 +137,26 @@ contract Mint__WithLiquidity is WithLiquidity {
         fyToken.mint(address(pool), fyTokenIn);
 
         vm.startPrank(alice);
-        pool.initialize(bob, bob, 0, MAX);
+        pool.mint(bob, bob, 0, MAX);
 
         uint256 minted = pool.balanceOf(bob) - poolTokensBefore;
 
         almostEqual(minted, expectedMint, fyTokenIn / 10000);
         almostEqual(base.balanceOf(bob), WAD + bobBaseInitialBalance, fyTokenIn / 10000);
 
-        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal, ) = pool.getCache();
 
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
     }
 
+    function testUnit_mint5() public {
+        console.log("cannot initialize twice");
+        vm.expectRevert(abi.encodeWithSelector(Initialized.selector));
+
+        vm.startPrank(alice);
+        pool.initialize(address(0), address(0), 0, MAX);
+    }
 }
 
 contract Burn__WithLiquidity is WithLiquidity {
@@ -167,13 +189,12 @@ contract Burn__WithLiquidity is WithLiquidity {
         vm.prank(alice);
         pool.burn(bob, address(charlie), 0, MAX);
 
-
         uint256 baseOut = baseBalance - base.balanceOf(address(pool));
         uint256 fyTokenOut = fyTokenBalance - fyToken.balanceOf(address(pool));
         almostEqual(baseOut, expectedBaseOut, baseOut / 10000);
         almostEqual(fyTokenOut, expectedFYTokenOut, fyTokenOut / 10000);
 
-        (, uint104 baseBal, uint104 fyTokenBal,) = pool.getCache();
+        (, uint104 baseBal, uint104 fyTokenBal, ) = pool.getCache();
         require(baseBal == pool.getBaseBalance());
         require(fyTokenBal == pool.getFYTokenBalance());
         require(base.balanceOf(bob) - bobBaseInitialBalance == baseOut);
