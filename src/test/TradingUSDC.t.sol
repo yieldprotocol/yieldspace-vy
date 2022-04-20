@@ -31,7 +31,8 @@ abstract contract WithLiquidity is ZeroStateUSDC {
     function setUp() public virtual override {
         super.setUp();
         base.mint(address(pool), initialBase);
-        pool.mint(address(0), address(0), 0, MAX);
+        vm.prank(alice);
+        pool.initialize(address(0), address(0), 0, MAX);
         base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
         fyToken.mint(address(pool), initialFYTokens);
         pool.sync();

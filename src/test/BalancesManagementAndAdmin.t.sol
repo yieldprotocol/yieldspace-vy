@@ -29,7 +29,12 @@ abstract contract WithLiquidity is ZeroStateDai {
         super.setUp();
         base.mint(address(pool), INITIAL_BASE * 10**(base.decimals()));
 
-        pool.mint(alice, bob, 0, MAX);
+        vm.prank(alice);
+
+        if (pool.hasRole(0x00000000, alice)) {
+            console.log("XXXXXX");
+        }
+        pool.initialize(alice, bob, 0, MAX);
         base.setPrice((cNumerator * (10**base.decimals())) / cDenominator);
         uint256 additionalFYToken = (INITIAL_BASE * 10**(base.decimals())) / 9;
 

@@ -53,14 +53,19 @@ abstract contract ZeroStateYearnVault is TestCoreYearnVault {
         base.setPrice((muNumerator * (10**base.decimals())) / muDenominator);
         fyToken = new FYTokenMock(fyName, fySymbol, address(base), maturity);
 
-        // setup pool
-        pool = new PoolYearnVault(address(base), address(fyToken), ts, g1Fee);
-
         // setup users
         alice = address(0xbabe);
         vm.label(alice, "alice");
         bob = address(0xb0b);
         vm.label(bob, "bob");
+
+        // setup pool
+        pool = new PoolYearnVault(address(base), address(fyToken), ts, g1Fee);
+        pool.grantRole(0x00000000, alice);
+        pool.grantRole(bytes4(pool.initialize.selector), alice);
+
+        pool.grantRole(0x00000000, bob);
+        pool.grantRole(bytes4(pool.initialize.selector), bob);
     }
 }
 

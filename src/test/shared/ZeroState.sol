@@ -16,6 +16,8 @@ import {Pool4626} from "../../contracts/Pool/Pool4626.sol";
 import {FYTokenMock} from "../mocks/FYTokenMock.sol";
 import {ERC4626TokenMock} from "../mocks/ERC4626TokenMock.sol";
 
+bytes4 constant ROOT = 0x00000000;
+
 struct ZeroStateParams {
     string fyName;
     string fySymbol;
@@ -53,14 +55,20 @@ abstract contract ZeroState is TestCore {
         base.setPrice((muNumerator * (10**base.decimals())) / muDenominator);
         fyToken = new FYTokenMock(fyName, fySymbol, address(base), maturity);
 
-        // setup pool
-        pool = new Pool4626(address(base), address(fyToken), ts, g1Fee);
-
         // setup users
         alice = address(0xbabe);
         vm.label(alice, "alice");
         bob = address(0xb0b);
         vm.label(bob, "bob");
+
+        // setup pool
+        pool = new Pool4626(address(base), address(fyToken), ts, g1Fee);
+        pool.grantRole(0x00000000, alice);
+        pool.grantRole(bytes4(pool.initialize.selector), alice);
+
+        pool.grantRole(0x00000000, bob);
+        pool.grantRole(bytes4(pool.initialize.selector), bob);
+
     }
 }
 

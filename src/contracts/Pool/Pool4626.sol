@@ -210,6 +210,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
             uint256
         )
     {
+        if (_totalSupply != 0) revert Initialized();
         return _mintInternal(to, remainder, 0, minRatio, maxRatio);
     }
 

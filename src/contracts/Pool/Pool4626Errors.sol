@@ -10,7 +10,11 @@ error AfterMaturity();
 /// Trade results in base balance > fyToken balance. We don't do that.
 error InsufficientFYTokenBalance(uint128 newFYTokenBalance, uint128 newBaseBalance);
 
-/// g1 represents the fee in bps, and it cannot be larger than 10000.
+/// The pool has already been initialized. What are you thinking?
+/// @dev To save gas, total supply == 0 is checked instead of a state variable
+error Initialized();
+
+/// Represents the fee in bps, and it cannot be larger than 10,000.
 /// @dev https://en.wikipedia.org/wiki/10,000 per wikipedia:
 /// 10,000 (ten thousand) is the natural number following 9,999 and preceding 10,001.
 /// @param proposedFee The fee that was proposed.
