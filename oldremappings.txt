@@ -1,0 +1,5 @@
+@yield-protocol/vault-interfaces/=./lib/vault-interfaces/
+@yield-protocol/yieldspace-interfaces/=./lib/yieldspace-interfaces/
+@yield-protocol/utils-v2/=./lib/yield-utils-v2/
+ds-test/=./lib/ds-test/src/
+forge-std/=lib/forge-std/src/
