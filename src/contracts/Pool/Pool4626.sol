@@ -58,7 +58,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     using CastU256U128 for uint256;
     using CastU256I256 for uint256;
     using MinimalTransferHelper for IFYToken;
-    using MinimalTransferHelper for IERC4626;
+    using MinimalTransferHelper for IERC20Like;
 
     /* MODIFIERS
      *****************************************************************************************************************/
@@ -72,13 +72,16 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     /* IMMUTABLES
      *****************************************************************************************************************/
 
-    IERC4626 public immutable base; // TODO: Consider making this IERC20 and use IERC4626 with previewRedeem
+    /// This pool accepts a pair of fyTokens and ERC4626 base tokens.
+    /// We mostly use the core ERC20 (except when checking current price), so we cast the base token as an IERC20Like
+    /// in order that this contract can be inherited by other non-standard tokenized vault contracts.
+    IERC20Like public immutable base;
     IFYToken public immutable fyToken;
 
-    int128 public immutable mu; //            The normalization coefficient, the initial c value, in 64.64
-    int128 public immutable ts; //            1 / seconds in 10 years (64.64)
-    uint32 public immutable maturity;
-    uint96 public immutable scaleFactor; //   Used to scale up to 18 decimals (not 64.64)
+    int128 public immutable mu; //                     The normalization coefficient, the initial c value, in 64.64
+    int128 public immutable ts; //                     1 / seconds in 10 years (64.64)
+    uint32 public immutable maturity;//                Maturity of the pool
+    uint96 public immutable scaleFactor; //            Used to scale up to 18 decimals (not 64.64)
 
     /* STORAGE
      *****************************************************************************************************************/
@@ -121,10 +124,9 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
         if ((maturity = uint32(IFYToken(fyToken_).maturity())) > type(uint32).max) revert MaturityOverflow();
 
         ts = ts_;
-
         setFees(g1Fee_);
+        scaleFactor = uint96(10**(18 - uint96(decimals))); // No more than 18 decimals allowed, reverts on underflow.
 
-        scaleFactor = uint96(10**(18 - uint96(decimals))); // No more than 18 decimals, will revert on underflow.
         if ((mu = _getC()) == 0) revert MuZero();
     }
 
@@ -895,7 +897,7 @@ contract Pool4626 is PoolEvents, IYVPool, ERC20Permit, AccessControl {
     /// Returns the base token current price.
     /// @return The price of 1 base token in terms of its underlying as fp18 cast as uint256.
     function getBaseCurrentPrice() public view virtual returns (uint256) {
-        return base.previewRedeem(10**base.decimals());
+        return IERC4626(address(base)).previewRedeem(10**base.decimals());
     }
 
     /// The "virtual" fyToken balance, which is the actual balance plus the pool token supply.
